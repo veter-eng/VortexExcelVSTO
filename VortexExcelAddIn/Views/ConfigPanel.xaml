@@ -1,0 +1,69 @@
+<UserControl x:Class="VortexExcelAddIn.Views.ConfigPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:VortexExcelAddIn">
+
+    <UserControl.Resources>
+        <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="15">
+            <TextBlock Text="Configuração do InfluxDB" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+
+            <!-- URL -->
+            <StackPanel Margin="0,0,0,15">
+                <TextBlock Text="URL do InfluxDB:" FontWeight="Medium" Margin="0,0,0,5"/>
+                <TextBox Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                <TextBlock Text="Exemplo: http://localhost:8086" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+            </StackPanel>
+
+            <!-- Token -->
+            <StackPanel Margin="0,0,0,15">
+                <TextBlock Text="Token de Acesso:" FontWeight="Medium" Margin="0,0,0,5"/>
+                <PasswordBox x:Name="TokenPasswordBox" Padding="8,6"/>
+                <TextBlock Text="Token de autenticação do InfluxDB" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+            </StackPanel>
+
+            <!-- Organização -->
+            <StackPanel Margin="0,0,0,15">
+                <TextBlock Text="Organização:" FontWeight="Medium" Margin="0,0,0,5"/>
+                <TextBox Text="{Binding Org, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                <TextBlock Text="Nome da organização no InfluxDB" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+            </StackPanel>
+
+            <!-- Bucket -->
+            <StackPanel Margin="0,0,0,15">
+                <TextBlock Text="Bucket:" FontWeight="Medium" Margin="0,0,0,5"/>
+                <TextBox Text="{Binding Bucket, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                <TextBlock Text="Nome do bucket onde os dados estão armazenados" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+            </StackPanel>
+
+            <!-- Botões -->
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <Button Content="Salvar e Conectar"
+                        Command="{Binding SaveCommand}"
+                        Background="#4472C4"
+                        Foreground="White"
+                        Padding="12,6"
+                        Margin="5"
+                        IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/>
+
+                <Button Content="Testar Conexão"
+                        Command="{Binding TestConnectionCommand}"
+                        Background="#7F7F7F"
+                        Foreground="White"
+                        Padding="12,6"
+                        Margin="5"
+                        IsEnabled="{Binding IsTesting, Converter={StaticResource InverseBoolConverter}}"/>
+            </StackPanel>
+
+            <!-- Status -->
+            <GroupBox Header="Status da Conexão" Margin="0,20,0,0" Padding="10">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
