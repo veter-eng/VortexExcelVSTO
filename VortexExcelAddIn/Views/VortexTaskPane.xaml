@@ -1,0 +1,46 @@
+<UserControl x:Class="VortexExcelAddIn.Views.VortexTaskPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:VortexExcelAddIn.Views">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#4472C4"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{StaticResource PrimaryBrush}"
+                Padding="15,10">
+            <StackPanel>
+                <TextBlock Text="Vortex Data Plugin"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="White"/>
+                <TextBlock Text="Importe dados do InfluxDB para o Excel"
+                           FontSize="11"
+                           Foreground="White"
+                           Opacity="0.9"
+                           Margin="0,3,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- TabControl -->
+        <TabControl Grid.Row="1"
+                    SelectedIndex="{Binding SelectedTabIndex}"
+                    BorderThickness="0">
+            <TabItem Header="Configuração">
+                <local:ConfigPanel DataContext="{Binding ConfigViewModel}"/>
+            </TabItem>
+
+            <TabItem Header="Consultar Dados">
+                <local:QueryPanel DataContext="{Binding QueryViewModel}"/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
