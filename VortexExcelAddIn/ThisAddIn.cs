@@ -21,9 +21,6 @@ namespace VortexExcelAddIn
         {
             try
             {
-                // Mostrar mensagem de início (DEBUG)
-                MessageBox.Show("Vortex Add-in: Iniciando...", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                 // Criar controle WPF
                 _taskPaneControl = new VortexTaskPane();
 
@@ -49,9 +46,6 @@ namespace VortexExcelAddIn
                 {
                     // Ignorar erros de logging
                 }
-
-                // Mostrar mensagem de sucesso (DEBUG)
-                MessageBox.Show("Vortex Add-in: Carregado com sucesso!\n\nProcure pela aba 'Suplementos' no Ribbon.", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
