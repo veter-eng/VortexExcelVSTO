@@ -64,9 +64,8 @@ echo ========================================
 echo Abrindo Excel...
 echo ========================================
 echo.
-echo IMPORTANTE: Voce DEVE ver 2 MessageBoxes:
-echo 1. "Vortex Add-in: Iniciando..."
-echo 2. "Vortex Add-in: Carregado com sucesso!"
+echo IMPORTANTE: O plugin agora inicia silenciosamente.
+echo Verifique se a aba "Suplementos" aparece no Ribbon.
 echo.
 
 start excel
