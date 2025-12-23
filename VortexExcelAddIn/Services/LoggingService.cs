@@ -12,8 +12,24 @@ namespace VortexExcelAddIn.Services
 
         static LoggingService()
         {
-            // Carregar configuração do NLog.config
-            LogManager.LoadConfiguration("NLog.config");
+            try
+            {
+                // Obter o diretório do assembly atual
+                string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                string assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyPath);
+                string configPath = System.IO.Path.Combine(assemblyDirectory, "NLog.config");
+
+                // Carregar configuração do NLog.config se existir
+                if (System.IO.File.Exists(configPath))
+                {
+                    LogManager.Setup().LoadConfigurationFromFile(configPath);
+                }
+            }
+            catch
+            {
+                // Se falhar ao carregar a configuração, o NLog usará configuração padrão
+                // Ignora o erro para não quebrar a inicialização do add-in
+            }
         }
 
         /// <summary>
