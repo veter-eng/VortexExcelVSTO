@@ -7,6 +7,7 @@ namespace VortexExcelAddIn
     {
         private void Ribbon1_Load(object sender, RibbonUIEventArgs e)
         {
+            btnToggleTaskPane.Image = Properties.Resources.VortexIcon;
         }
 
         private void btnToggleTaskPane_Click(object sender, RibbonControlEventArgs e)
