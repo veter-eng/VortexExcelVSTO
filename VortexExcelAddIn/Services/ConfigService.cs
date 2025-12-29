@@ -128,7 +128,7 @@ namespace VortexExcelAddIn.Services
                 Url = "http://localhost:8086",
                 Token = "",
                 Org = "vortex",
-                Bucket = "vortex_bucket"
+                Bucket = "vortex_data"
             };
         }
 
