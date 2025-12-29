@@ -212,31 +212,23 @@ namespace VortexExcelAddIn.ViewModels
                 // Criar serviço temporário para teste
                 using (var testService = new InfluxDBService(config))
                 {
-                    var result = await testService.TestConnectionAsync();
+                    await testService.TestConnectionAsync();
 
-                    if (result)
-                    {
-                        IsConnected = true;
-                        StatusMessage = "Conexão estabelecida com sucesso!";
-                        StatusMessageColor = Brushes.Green;
+                    IsConnected = true;
+                    StatusMessage = "Conexão estabelecida com sucesso!";
+                    StatusMessageColor = Brushes.Green;
 
-                        // Atualizar serviço principal
-                        _influxDbService?.Dispose();
-                        _influxDbService = new InfluxDBService(config);
-                    }
-                    else
-                    {
-                        IsConnected = false;
-                        StatusMessage = "Falha ao conectar. Verifique as credenciais.";
-                        StatusMessageColor = Brushes.Red;
-                    }
+                    // Atualizar serviço principal
+                    _influxDbService?.Dispose();
+                    _influxDbService = new InfluxDBService(config);
                 }
             }
             catch (Exception ex)
             {
                 IsConnected = false;
-                StatusMessage = $"Erro de conexão: {ex.Message}";
+                StatusMessage = $"Erro: {ex.Message}";
                 StatusMessageColor = Brushes.Red;
+                LoggingService.Error($"Falha ao testar conexão: {ex.Message}", ex);
                 throw;
             }
         }
@@ -246,8 +238,16 @@ namespace VortexExcelAddIn.ViewModels
         /// </summary>
         public InfluxDBService GetInfluxDbService()
         {
-            if (_influxDbService == null && IsConnected)
+            if (_influxDbService == null)
             {
+                // Verificar se há configuração válida
+                if (string.IsNullOrWhiteSpace(Url) || string.IsNullOrWhiteSpace(Token) ||
+                    string.IsNullOrWhiteSpace(Org) || string.IsNullOrWhiteSpace(Bucket))
+                {
+                    LoggingService.Warn("Tentativa de criar serviço InfluxDB sem configuração completa");
+                    return null;
+                }
+
                 var config = new InfluxDBConfig
                 {
                     Url = Url,
@@ -256,6 +256,7 @@ namespace VortexExcelAddIn.ViewModels
                     Bucket = Bucket
                 };
                 _influxDbService = new InfluxDBService(config);
+                LoggingService.Info("Serviço InfluxDB criado automaticamente");
             }
 
             return _influxDbService;
