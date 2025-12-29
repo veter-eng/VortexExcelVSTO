@@ -5,6 +5,7 @@
 
     <UserControl.Resources>
         <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -20,9 +21,9 @@
 
             <!-- Token -->
             <StackPanel Margin="0,0,0,15">
-                <TextBlock Text="Token de Acesso:" FontWeight="Medium" Margin="0,0,0,5"/>
-                <PasswordBox x:Name="TokenPasswordBox" Padding="8,6"/>
-                <TextBlock Text="Token de autenticação do InfluxDB" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+                <TextBlock Text="Token de API:" FontWeight="Medium" Margin="0,0,0,5"/>
+                <TextBox Text="{Binding Token, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                <TextBlock Text="Token de autenticação do InfluxDB (gerado em Data > API Tokens)" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
             </StackPanel>
 
             <!-- Organização -->
