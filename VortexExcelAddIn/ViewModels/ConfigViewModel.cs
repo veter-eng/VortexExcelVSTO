@@ -1,20 +1,28 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using VortexExcelAddIn.Application.Factories;
+using VortexExcelAddIn.Domain.Interfaces;
+using VortexExcelAddIn.Domain.Models;
 using VortexExcelAddIn.Models;
 using VortexExcelAddIn.Services;
 
 namespace VortexExcelAddIn.ViewModels
 {
     /// <summary>
-    /// ViewModel para o painel de configuração
-    /// Port do ConfigPanel.tsx
+    /// ViewModel para o painel de configuração.
+    /// Refatorado para suportar múltiplos bancos de dados (SOLID: DIP).
     /// </summary>
     public partial class ConfigViewModel : ViewModelBase
     {
-        private InfluxDBService _influxDbService;
+        private readonly IDatabaseConnectionFactory _connectionFactory;
+        private IDataSourceConnection _dataSourceConnection;
+
+        // Mantido para backward compatibility temporária
+        private InfluxDbService _influxDbService;
 
         #region Observable Properties
 
@@ -45,32 +53,88 @@ namespace VortexExcelAddIn.ViewModels
         [ObservableProperty]
         private Brush _statusMessageColor;
 
+        // Novas propriedades para suporte multi-banco
+        [ObservableProperty]
+        private DatabaseType _selectedDatabaseType;
+
+        [ObservableProperty]
+        private ObservableCollection<DatabaseTypeItem> _availableDatabaseTypes;
+
+        [ObservableProperty]
+        private bool _isRelationalDatabase;
+
+        // Campos para bancos relacionais
+        [ObservableProperty]
+        private string _host;
+
+        [ObservableProperty]
+        private int _port;
+
+        [ObservableProperty]
+        private string _username;
+
+        [ObservableProperty]
+        private string _password;
+
+        [ObservableProperty]
+        private string _databaseName;
+
+        [ObservableProperty]
+        private string _tableName;
+
+        [ObservableProperty]
+        private string _schemaName;
+
+        [ObservableProperty]
+        private bool _useSsl;
+
         #endregion
 
-        public ConfigViewModel()
+        public ConfigViewModel() : this(new DatabaseConnectionFactory())
         {
+        }
+
+        public ConfigViewModel(IDatabaseConnectionFactory connectionFactory)
+        {
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+
+            // Inicializar lista de tipos de banco disponíveis
+            InitializeAvailableDatabaseTypes();
+
             // Carregar configuração do workbook ou usar padrão
             LoadConfiguration();
 
             // Inicializar cores de status
             StatusMessageColor = Brushes.Gray;
-            StatusMessage = "Configure a conexão com o InfluxDB";
+            UpdateStatusMessage();
         }
 
         /// <summary>
-        /// Carrega a configuração do workbook
+        /// Inicializa a lista de bancos de dados disponíveis.
+        /// </summary>
+        private void InitializeAvailableDatabaseTypes()
+        {
+            AvailableDatabaseTypes = new ObservableCollection<DatabaseTypeItem>
+            {
+                new DatabaseTypeItem { Type = DatabaseType.InfluxDB, DisplayName = "InfluxDB (Time Series)" },
+                new DatabaseTypeItem { Type = DatabaseType.PostgreSQL, DisplayName = "PostgreSQL" },
+                new DatabaseTypeItem { Type = DatabaseType.MySQL, DisplayName = "MySQL" },
+                new DatabaseTypeItem { Type = DatabaseType.Oracle, DisplayName = "Oracle Database" },
+                new DatabaseTypeItem { Type = DatabaseType.SqlServer, DisplayName = "SQL Server" }
+            };
+        }
+
+        /// <summary>
+        /// Carrega a configuração do workbook (v2 com migração automática).
         /// </summary>
         private void LoadConfiguration()
         {
             try
             {
-                var config = ConfigService.LoadConfig();
-                Url = config.Url;
-                Token = config.Token;
-                Org = config.Org;
-                Bucket = config.Bucket;
+                var config = ConfigService.LoadConfigV2();
+                LoadFromUnifiedConfig(config);
 
-                LoggingService.Debug("Configuração carregada no ViewModel");
+                LoggingService.Debug($"Configuração v2 carregada no ViewModel (Tipo: {config.DatabaseType})");
             }
             catch (Exception ex)
             {
@@ -80,19 +144,143 @@ namespace VortexExcelAddIn.ViewModels
         }
 
         /// <summary>
-        /// Define valores padrão
+        /// Carrega propriedades do ViewModel a partir de UnifiedDatabaseConfig.
         /// </summary>
-        private void SetDefaultConfig()
+        private void LoadFromUnifiedConfig(UnifiedDatabaseConfig config)
         {
-            var defaultConfig = ConfigService.GetDefaultConfig();
-            Url = defaultConfig.Url;
-            Token = defaultConfig.Token;
-            Org = defaultConfig.Org;
-            Bucket = defaultConfig.Bucket;
+            if (config == null)
+            {
+                SetDefaultConfig();
+                return;
+            }
+
+            SelectedDatabaseType = config.DatabaseType;
+
+            if (config.DatabaseType == DatabaseType.InfluxDB)
+            {
+                // Campos InfluxDB
+                Url = config.ConnectionSettings.Url ?? string.Empty;
+                Token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
+                Org = config.ConnectionSettings.Org ?? string.Empty;
+                Bucket = config.ConnectionSettings.Bucket ?? string.Empty;
+            }
+            else
+            {
+                // Campos relacionais
+                Host = config.ConnectionSettings.Host ?? string.Empty;
+                Port = config.ConnectionSettings.Port;
+                Username = config.ConnectionSettings.Username ?? string.Empty;
+                Password = config.ConnectionSettings.EncryptedPassword ?? string.Empty;
+                DatabaseName = config.ConnectionSettings.DatabaseName ?? string.Empty;
+                UseSsl = config.ConnectionSettings.UseSsl;
+
+                // Schema e tabela
+                TableName = config.TableSchema?.TableName ?? string.Empty;
+                SchemaName = config.TableSchema?.SchemaName ?? string.Empty;
+            }
+
+            UpdateFieldsVisibility();
         }
 
         /// <summary>
-        /// Comando para salvar configuração
+        /// Cria UnifiedDatabaseConfig a partir das propriedades do ViewModel.
+        /// </summary>
+        private UnifiedDatabaseConfig CreateUnifiedConfigFromViewModel()
+        {
+            var config = new UnifiedDatabaseConfig
+            {
+                DatabaseType = SelectedDatabaseType,
+                ConfigVersion = 2
+            };
+
+            if (SelectedDatabaseType == DatabaseType.InfluxDB)
+            {
+                config.ConnectionSettings = new DatabaseConnectionSettings
+                {
+                    Url = Url?.Trim() ?? string.Empty,
+                    EncryptedToken = Token?.Trim() ?? string.Empty,
+                    Org = Org?.Trim() ?? string.Empty,
+                    Bucket = Bucket?.Trim() ?? string.Empty
+                };
+            }
+            else
+            {
+                config.ConnectionSettings = new DatabaseConnectionSettings
+                {
+                    Host = Host?.Trim() ?? string.Empty,
+                    Port = Port,
+                    Username = Username?.Trim() ?? string.Empty,
+                    EncryptedPassword = Password?.Trim() ?? string.Empty,
+                    DatabaseName = DatabaseName?.Trim() ?? string.Empty,
+                    UseSsl = UseSsl
+                };
+
+                config.TableSchema = new TableSchema
+                {
+                    TableName = TableName?.Trim() ?? string.Empty,
+                    SchemaName = SchemaName?.Trim() ?? string.Empty
+                };
+            }
+
+            return config;
+        }
+
+        /// <summary>
+        /// Atualiza visibilidade dos campos baseado no tipo de banco selecionado.
+        /// </summary>
+        private void UpdateFieldsVisibility()
+        {
+            IsRelationalDatabase = SelectedDatabaseType.IsRelational();
+        }
+
+        /// <summary>
+        /// Atualiza mensagem de status baseado no tipo de banco selecionado.
+        /// </summary>
+        private void UpdateStatusMessage()
+        {
+            if (string.IsNullOrEmpty(StatusMessage) || StatusMessage.StartsWith("Configure"))
+            {
+                StatusMessage = $"Configure a conexão com {SelectedDatabaseType.GetDisplayName()}";
+            }
+        }
+
+        /// <summary>
+        /// Chamado quando o tipo de banco é alterado.
+        /// </summary>
+        partial void OnSelectedDatabaseTypeChanged(DatabaseType value)
+        {
+            UpdateFieldsVisibility();
+            UpdateStatusMessage();
+
+            // Limpar conexão anterior
+            _dataSourceConnection?.Dispose();
+            _dataSourceConnection = null;
+
+            // Definir valores padrão para o novo banco
+            SetDefaultConfigForDatabaseType(value);
+
+            LoggingService.Info($"Tipo de banco alterado para: {value}");
+        }
+
+        /// <summary>
+        /// Define valores padrão para o banco atual.
+        /// </summary>
+        private void SetDefaultConfig()
+        {
+            SetDefaultConfigForDatabaseType(SelectedDatabaseType);
+        }
+
+        /// <summary>
+        /// Define valores padrão para um tipo de banco específico.
+        /// </summary>
+        private void SetDefaultConfigForDatabaseType(DatabaseType databaseType)
+        {
+            var defaultConfig = _connectionFactory.CreateDefaultConfig(databaseType);
+            LoadFromUnifiedConfig(defaultConfig);
+        }
+
+        /// <summary>
+        /// Comando para salvar configuração (v2 - multi-banco).
         /// </summary>
         [RelayCommand]
         private async Task SaveAsync()
@@ -103,55 +291,28 @@ namespace VortexExcelAddIn.ViewModels
 
             try
             {
-                // Validar campos obrigatórios
-                if (string.IsNullOrWhiteSpace(Url))
+                // Criar config a partir do ViewModel
+                var config = CreateUnifiedConfigFromViewModel();
+
+                // Validar configuração
+                if (!config.IsValid())
                 {
-                    StatusMessage = "URL é obrigatória";
+                    StatusMessage = GetValidationErrorMessage(config);
                     StatusMessageColor = Brushes.Red;
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(Token))
-                {
-                    StatusMessage = "Token é obrigatório";
-                    StatusMessageColor = Brushes.Red;
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(Org))
-                {
-                    StatusMessage = "Organização é obrigatória";
-                    StatusMessageColor = Brushes.Red;
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(Bucket))
-                {
-                    StatusMessage = "Bucket é obrigatório";
-                    StatusMessageColor = Brushes.Red;
-                    return;
-                }
-
-                // Criar config object
-                var config = new InfluxDBConfig
-                {
-                    Url = Url.Trim(),
-                    Token = Token.Trim(),
-                    Org = Org.Trim(),
-                    Bucket = Bucket.Trim()
-                };
-
-                // Salvar no workbook
-                ConfigService.SaveConfig(config);
+                // Salvar no workbook (com criptografia automática)
+                ConfigService.SaveConfigV2(config);
 
                 // Testar conexão automaticamente após salvar
                 await TestConnectionInternalAsync(config);
 
                 if (IsConnected)
                 {
-                    StatusMessage = "Configuração salva e conexão testada com sucesso!";
+                    StatusMessage = $"Configuração salva e conexão testada com sucesso! ({SelectedDatabaseType.GetDisplayName()})";
                     StatusMessageColor = Brushes.Green;
-                    LoggingService.Info("Configuração salva e testada com sucesso");
+                    LoggingService.Info($"Configuração salva e testada: {SelectedDatabaseType}");
                 }
             }
             catch (Exception ex)
@@ -168,25 +329,49 @@ namespace VortexExcelAddIn.ViewModels
         }
 
         /// <summary>
-        /// Comando para testar conexão
+        /// Obtém mensagem de erro de validação baseada no tipo de banco.
+        /// </summary>
+        private string GetValidationErrorMessage(UnifiedDatabaseConfig config)
+        {
+            if (config.DatabaseType == DatabaseType.InfluxDB)
+            {
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Url))
+                    return "URL é obrigatória";
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.EncryptedToken))
+                    return "Token é obrigatório";
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Org))
+                    return "Organização é obrigatória";
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Bucket))
+                    return "Bucket é obrigatório";
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Host))
+                    return "Host é obrigatório";
+                if (config.ConnectionSettings.Port <= 0)
+                    return "Porta é obrigatória";
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.DatabaseName))
+                    return "Nome do banco de dados é obrigatório";
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Username))
+                    return "Usuário é obrigatório";
+            }
+
+            return "Configuração inválida. Verifique os campos obrigatórios.";
+        }
+
+        /// <summary>
+        /// Comando para testar conexão (v2 - multi-banco).
         /// </summary>
         [RelayCommand]
         private async Task TestConnectionAsync()
         {
             IsTesting = true;
-            StatusMessage = "Testando conexão...";
+            StatusMessage = $"Testando conexão com {SelectedDatabaseType.GetDisplayName()}...";
             StatusMessageColor = Brushes.Gray;
 
             try
             {
-                var config = new InfluxDBConfig
-                {
-                    Url = Url?.Trim() ?? string.Empty,
-                    Token = Token?.Trim() ?? string.Empty,
-                    Org = Org?.Trim() ?? string.Empty,
-                    Bucket = Bucket?.Trim() ?? string.Empty
-                };
-
+                var config = CreateUnifiedConfigFromViewModel();
                 await TestConnectionInternalAsync(config);
             }
             catch (Exception ex)
@@ -203,24 +388,40 @@ namespace VortexExcelAddIn.ViewModels
         }
 
         /// <summary>
-        /// Testa a conexão internamente
+        /// Testa a conexão internamente usando a nova arquitetura.
         /// </summary>
-        private async Task TestConnectionInternalAsync(InfluxDBConfig config)
+        private async Task TestConnectionInternalAsync(UnifiedDatabaseConfig config)
         {
             try
             {
-                // Criar serviço temporário para teste
-                using (var testService = new InfluxDBService(config))
+                // Criar conexão temporária para teste
+                using (var testConnection = _connectionFactory.CreateConnection(config))
                 {
-                    await testService.TestConnectionAsync();
+                    var result = await testConnection.TestConnectionAsync();
 
-                    IsConnected = true;
-                    StatusMessage = "Conexão estabelecida com sucesso!";
-                    StatusMessageColor = Brushes.Green;
+                    if (result.IsSuccessful)
+                    {
+                        IsConnected = true;
+                        StatusMessage = $"Conexão estabelecida com sucesso! ({SelectedDatabaseType.GetDisplayName()})";
+                        if (result.Latency.TotalMilliseconds > 0)
+                        {
+                            StatusMessage += $" - Latência: {result.Latency.TotalMilliseconds:F0}ms";
+                        }
+                        StatusMessageColor = Brushes.Green;
 
-                    // Atualizar serviço principal
-                    _influxDbService?.Dispose();
-                    _influxDbService = new InfluxDBService(config);
+                        // Atualizar conexão principal
+                        _dataSourceConnection?.Dispose();
+                        _dataSourceConnection = _connectionFactory.CreateConnection(config);
+
+                        LoggingService.Info($"Conexão testada com sucesso: {SelectedDatabaseType}");
+                    }
+                    else
+                    {
+                        IsConnected = false;
+                        StatusMessage = $"Falha na conexão: {result.Message}";
+                        StatusMessageColor = Brushes.Red;
+                        LoggingService.Error($"Falha ao testar conexão: {result.Message}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -236,7 +437,7 @@ namespace VortexExcelAddIn.ViewModels
         /// <summary>
         /// Obtém o serviço InfluxDB configurado
         /// </summary>
-        public InfluxDBService GetInfluxDbService()
+        public InfluxDbService GetInfluxDbService()
         {
             if (_influxDbService == null)
             {
@@ -255,7 +456,7 @@ namespace VortexExcelAddIn.ViewModels
                     Org = Org,
                     Bucket = Bucket
                 };
-                _influxDbService = new InfluxDBService(config);
+                _influxDbService = new InfluxDbService(config);
                 LoggingService.Info("Serviço InfluxDB criado automaticamente");
             }
 
@@ -263,11 +464,56 @@ namespace VortexExcelAddIn.ViewModels
         }
 
         /// <summary>
+        /// Obtém a conexão de banco de dados configurada (nova arquitetura SOLID).
+        /// </summary>
+        public IDataSourceConnection GetConnection()
+        {
+            if (_dataSourceConnection == null)
+            {
+                try
+                {
+                    var config = CreateUnifiedConfigFromViewModel();
+
+                    if (!config.IsValid())
+                    {
+                        LoggingService.Warn("Tentativa de criar conexão sem configuração completa");
+                        return null;
+                    }
+
+                    _dataSourceConnection = _connectionFactory.CreateConnection(config);
+                    LoggingService.Info($"Conexão criada automaticamente: {config.DatabaseType}");
+                }
+                catch (Exception ex)
+                {
+                    LoggingService.Error("Erro ao criar conexão de banco de dados", ex);
+                    return null;
+                }
+            }
+
+            return _dataSourceConnection;
+        }
+
+        /// <summary>
         /// Cleanup
         /// </summary>
         public void Dispose()
         {
+            _dataSourceConnection?.Dispose();
             _influxDbService?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Item da lista de tipos de banco de dados para binding no ComboBox.
+    /// </summary>
+    public class DatabaseTypeItem
+    {
+        public DatabaseType Type { get; set; }
+        public string DisplayName { get; set; }
+
+        public override string ToString()
+        {
+            return DisplayName;
         }
     }
 }
