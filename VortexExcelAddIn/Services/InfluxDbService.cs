@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using VortexExcelAddIn.Domain.Models;
 using VortexExcelAddIn.Models;
 
 namespace VortexExcelAddIn.Services
@@ -14,17 +14,17 @@ namespace VortexExcelAddIn.Services
     /// <summary>
     /// Serviço para comunicação com o InfluxDB via REST API
     /// </summary>
-    public class InfluxDBService : IDisposable
+    public class InfluxDbService : IDisposable
     {
         private readonly HttpClient _httpClient;
         private readonly InfluxDBConfig _config;
-        private bool _disposed = false;
+        private bool _disposed;
 
         // Propriedades públicas para debug
         public string LastQueryExecuted { get; private set; }
         public string LastRawResponse { get; private set; }
 
-        public InfluxDBService(InfluxDBConfig config)
+        public InfluxDbService(InfluxDBConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -431,7 +431,6 @@ namespace VortexExcelAddIn.Services
 
                     dataLineCount++;
 
-                    // Log detalhado ao redor da área problemática (linha ~4000 de dados)
                     bool isNearProblemArea = (dataLineCount >= 3995 && dataLineCount <= 4005);
 
                     if (isNearProblemArea)
@@ -465,7 +464,7 @@ namespace VortexExcelAddIn.Services
                     if (!isValidColetorId || !isValidGatewayId || !isValidEquipmentId || !isValidTagId)
                     {
                         invalidIdCount++;
-                        if (invalidIdCount <= 10)  // Logar apenas os primeiros 10 para não poluir
+                        if (invalidIdCount <= 10)  // Apenas os primeiros 10 para não poluir
                         {
                             LoggingService.Debug($"Linha {i} ignorada - IDs não numéricos: Coletor=[{dataPoint.ColetorId}], Gateway=[{dataPoint.GatewayId}], Equipment=[{dataPoint.EquipmentId}], Tag=[{dataPoint.TagId}]");
                         }
@@ -600,14 +599,6 @@ namespace VortexExcelAddIn.Services
         }
     }
 
-    /// <summary>
-    /// Tipos de agregação suportados
-    /// </summary>
-    public enum AggregationType
-    {
-        Mean,
-        Min,
-        Max,
-        Count
-    }
+    // NOTA: Enum AggregationType movido para Domain/Models/AggregationType.cs
+    // para evitar duplicação e suportar a nova arquitetura multi-banco.
 }
