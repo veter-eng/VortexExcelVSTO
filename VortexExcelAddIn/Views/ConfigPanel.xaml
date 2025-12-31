@@ -7,54 +7,56 @@
         <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+
+        <!-- Estilo para ícone de informação -->
+        <Style x:Key="InfoIconStyle" TargetType="TextBlock">
+            <Setter Property="Text" Value="ⓘ"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#4472C4"/>
+            <Setter Property="Cursor" Value="Help"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+        </Style>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="15">
             <TextBlock Text="Configuração do Banco de Dados" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
 
-            <!-- Seleção de Tipo de Banco de Dados -->
+            <!-- Seleção de Tipo de Conexão -->
             <StackPanel Margin="0,0,0,15">
-                <TextBlock Text="Tipo de Banco de Dados:" FontWeight="Medium" Margin="0,0,0,5"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <TextBlock Text="Tipo de Conexão:" FontWeight="Medium"/>
+                    <TextBlock Style="{StaticResource InfoIconStyle}">
+                        <TextBlock.ToolTip>
+                            <ToolTip Content="Selecione o tipo de conexão que deseja configurar"/>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                </StackPanel>
                 <ComboBox ItemsSource="{Binding AvailableDatabaseTypes}"
                           DisplayMemberPath="DisplayName"
                           SelectedValuePath="Type"
                           SelectedValue="{Binding SelectedDatabaseType, Mode=TwoWay}"
-                          Padding="8,6"
-                          Margin="0,0,0,5"/>
-                <TextBlock Text="Selecione o banco de dados que deseja conectar" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+                          Padding="8,6"/>
             </StackPanel>
 
             <!-- Campos para InfluxDB -->
-            <GroupBox Header="Configuração InfluxDB"
+            <GroupBox Header="Configuração Vortex Historian"
                       Visibility="{Binding IsRelationalDatabase, Converter={StaticResource InverseBoolToVisibilityConverter}}"
                       Margin="0,0,0,15"
                       Padding="10">
                 <StackPanel>
-                    <!-- URL -->
-                    <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="URL do InfluxDB:" FontWeight="Medium" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Exemplo: http://localhost:8086" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
-                    </StackPanel>
-
                     <!-- Token -->
-                    <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Token de API:" FontWeight="Medium" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding Token, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Token de autenticação do InfluxDB" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
-                    </StackPanel>
-
-                    <!-- Organização -->
-                    <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Organização:" FontWeight="Medium" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding Org, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                    </StackPanel>
-
-                    <!-- Bucket -->
                     <StackPanel Margin="0,0,0,0">
-                        <TextBlock Text="Bucket:" FontWeight="Medium" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding Bucket, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Token de API:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Token de autenticação do Servidor Vortex Historian"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBox Text="{Binding Token, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
@@ -67,16 +69,28 @@
                 <StackPanel>
                     <!-- Host -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Host:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Host:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Exemplo: localhost ou 192.168.1.100"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Exemplo: localhost ou 192.168.1.100" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- Porta -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Porta:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Porta:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Porta padrão (PostgreSQL: 5432, MySQL: 3306, SQL Server: 1433, Oracle: 1521)"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Porta padrão (PostgreSQL: 5432, MySQL: 3306, SQL Server: 1433, Oracle: 1521)" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- Nome do Banco -->
@@ -93,9 +107,15 @@
 
                     <!-- Senha -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Senha:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Senha:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="A senha será criptografada com DPAPI antes de ser salva"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <PasswordBox x:Name="PasswordBox" PasswordChanged="PasswordBox_OnPasswordChanged" Padding="8,6"/>
-                        <TextBlock Text="A senha será criptografada com DPAPI antes de ser salva" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- SSL -->
@@ -111,16 +131,28 @@
                 <StackPanel>
                     <!-- Schema -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Schema:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Schema:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Exemplo: public (PostgreSQL), dbo (SQL Server)"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding SchemaName, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Exemplo: public (PostgreSQL), dbo (SQL Server)" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- Nome da Tabela -->
                     <StackPanel Margin="0,0,0,0">
-                        <TextBlock Text="Nome da Tabela:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Nome da Tabela:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Exemplo: dados_airflow, dados_maquinas"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding TableName, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Exemplo: dados_airflow, dados_maquinas" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
@@ -135,10 +167,10 @@
                         Margin="5"
                         IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBoolConverter}}"/>
 
-                <Button Content="Testar Conexão"
+                <Button Content="{Binding TestConnectionButtonText}"
                         Command="{Binding TestConnectionCommand}"
-                        Background="#7F7F7F"
-                        Foreground="White"
+                        Background="{Binding TestConnectionButtonBackground}"
+                        Foreground="{Binding TestConnectionButtonForeground}"
                         Padding="12,6"
                         Margin="5"
                         IsEnabled="{Binding IsTesting, Converter={StaticResource InverseBoolConverter}}"/>
