@@ -244,7 +244,10 @@
     <Compile Include="Models\UnifiedDatabaseConfig.cs" />
     <Compile Include="Models\DatabaseConnectionSettings.cs" />
     <Compile Include="Models\TableSchema.cs" />
+    <Compile Include="Models\AutoRefreshSettings.cs" />
     <Compile Include="Domain\Interfaces\IDataSourceConnection.cs" />
+    <Compile Include="Domain\Interfaces\IAutoRefreshService.cs" />
+    <Compile Include="Domain\Interfaces\ITimerService.cs" />
     <Compile Include="Domain\Interfaces\ISupportsAggregation.cs" />
     <Compile Include="Domain\Interfaces\ISupportsRawTableAccess.cs" />
     <Compile Include="Domain\Interfaces\IQueryBuilder.cs" />
@@ -267,10 +270,14 @@
     <Compile Include="Services\InfluxDbService.cs" />
     <Compile Include="Services\ConfigService.cs" />
     <Compile Include="Services\ExcelService.cs" />
+    <Compile Include="Services\SystemTimerService.cs" />
+    <Compile Include="Services\AutoRefreshConfigService.cs" />
+    <Compile Include="Services\AutoRefreshService.cs" />
     <Compile Include="ViewModels\ViewModelBase.cs" />
     <Compile Include="ViewModels\ConfigViewModel.cs" />
     <Compile Include="ViewModels\QueryViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="ViewModels\AutoRefreshViewModel.cs" />
     <Compile Include="Views\ConfigPanel.xaml.cs">
       <DependentUpon>ConfigPanel.xaml</DependentUpon>
     </Compile>
@@ -279,6 +286,12 @@
     </Compile>
     <Compile Include="Views\VortexTaskPane.xaml.cs">
       <DependentUpon>VortexTaskPane.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AutoRefreshDialog.xaml.cs">
+      <DependentUpon>AutoRefreshDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AutoRefreshStatusPanel.xaml.cs">
+      <DependentUpon>AutoRefreshStatusPanel.xaml</DependentUpon>
     </Compile>
     <Compile Include="Converters.cs" />
     <Compile Include="Ribbon1.cs">
@@ -296,6 +309,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\VortexTaskPane.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\AutoRefreshDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\AutoRefreshStatusPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
