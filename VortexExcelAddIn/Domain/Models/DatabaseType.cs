@@ -46,7 +46,7 @@ namespace VortexExcelAddIn.Domain.Models
         {
             return type switch
             {
-                DatabaseType.InfluxDB => "InfluxDB (Time Series)",
+                DatabaseType.InfluxDB => "Servidor Vortex Historian",
                 DatabaseType.PostgreSQL => "PostgreSQL",
                 DatabaseType.MySQL => "MySQL",
                 DatabaseType.Oracle => "Oracle Database",
