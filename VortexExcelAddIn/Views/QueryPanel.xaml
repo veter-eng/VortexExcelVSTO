@@ -1,7 +1,8 @@
 <UserControl x:Class="VortexExcelAddIn.Views.QueryPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:VortexExcelAddIn">
+             xmlns:local="clr-namespace:VortexExcelAddIn"
+             xmlns:views="clr-namespace:VortexExcelAddIn.Views">
 
     <UserControl.Resources>
         <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
