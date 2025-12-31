@@ -19,6 +19,11 @@ namespace VortexExcelAddIn.ViewModels
     {
         private readonly ConfigViewModel _configViewModel;
 
+        /// <summary>
+        /// Evento disparado quando dados são exportados para o Excel
+        /// </summary>
+        public event EventHandler DataExported;
+
         #region Observable Properties
 
         // Campos de texto para IDs (separados por vírgula)
@@ -208,6 +213,9 @@ namespace VortexExcelAddIn.ViewModels
                 StatusMessage = $"Dados exportados para Excel: {Results.Count} registros";
                 StatusMessageColor = Brushes.Green;
                 LoggingService.Info($"Dados exportados para Excel: {Results.Count} registros");
+
+                // Notificar que dados foram exportados
+                DataExported?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
