@@ -83,7 +83,7 @@ namespace VortexExcelAddIn.Application.Factories
                         {
                             Url = "http://localhost:8086",
                             Org = "vortex",
-                            Bucket = "vortex_bucket",
+                            Bucket = "vortex_data",
                             EncryptedToken = string.Empty
                         }
                     };
