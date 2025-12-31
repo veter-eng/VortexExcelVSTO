@@ -37,6 +37,10 @@ namespace VortexExcelAddIn
             this.tab1 = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
             this.btnToggleTaskPane = this.Factory.CreateRibbonButton();
+            this.btnAutoRefresh = this.Factory.CreateRibbonSplitButton();
+            this.menuAutoRefresh = this.Factory.CreateRibbonMenu();
+            this.menuRefreshNow = this.Factory.CreateRibbonButton();
+            this.menuStopAutoRefresh = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.SuspendLayout();
@@ -51,6 +55,7 @@ namespace VortexExcelAddIn
             // group1
             //
             this.group1.Items.Add(this.btnToggleTaskPane);
+            this.group1.Items.Add(this.btnAutoRefresh);
             this.group1.Label = "Vortex Data";
             this.group1.Name = "group1";
             //
@@ -61,6 +66,29 @@ namespace VortexExcelAddIn
             this.btnToggleTaskPane.Name = "btnToggleTaskPane";
             this.btnToggleTaskPane.ShowImage = true;
             this.btnToggleTaskPane.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnToggleTaskPane_Click);
+            //
+            // btnAutoRefresh
+            //
+            this.btnAutoRefresh.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.btnAutoRefresh.Items.Add(this.menuRefreshNow);
+            this.btnAutoRefresh.Items.Add(this.menuStopAutoRefresh);
+            this.btnAutoRefresh.Label = "Refresh";
+            this.btnAutoRefresh.Name = "btnAutoRefresh";
+            this.btnAutoRefresh.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnAutoRefresh_Click);
+            //
+            // menuRefreshNow
+            //
+            this.menuRefreshNow.Label = "Atualizar Agora";
+            this.menuRefreshNow.Name = "menuRefreshNow";
+            this.menuRefreshNow.ShowImage = true;
+            this.menuRefreshNow.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.menuRefreshNow_Click);
+            //
+            // menuStopAutoRefresh
+            //
+            this.menuStopAutoRefresh.Label = "Parar Refresh";
+            this.menuStopAutoRefresh.Name = "menuStopAutoRefresh";
+            this.menuStopAutoRefresh.ShowImage = true;
+            this.menuStopAutoRefresh.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.menuStopAutoRefresh_Click);
             //
             // Ribbon1
             //
@@ -81,6 +109,10 @@ namespace VortexExcelAddIn
         internal Microsoft.Office.Tools.Ribbon.RibbonTab tab1;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnToggleTaskPane;
+        internal Microsoft.Office.Tools.Ribbon.RibbonSplitButton btnAutoRefresh;
+        internal Microsoft.Office.Tools.Ribbon.RibbonMenu menuAutoRefresh;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton menuRefreshNow;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton menuStopAutoRefresh;
     }
 
     partial class ThisRibbonCollection
