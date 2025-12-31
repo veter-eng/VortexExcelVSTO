@@ -49,7 +49,13 @@ namespace VortexExcelAddIn.DataAccess.InfluxDB
             var fluxQuery = $@"
                 from(bucket: ""{_config.Bucket}"")
                   |> range(start: {FormatTimestamp(parameters.StartTime)}, stop: {FormatTimestamp(parameters.EndTime)})
-                  |> filter(fn: (r) => r[""_measurement""] == ""dados_rabbitmq"")";
+                  |> filter(fn: (r) => r[""_measurement""] == ""dados_rabbitmq"")
+                  |> filter(fn: (r) =>
+                      exists r.coletor_id and r.coletor_id =~ /^[0-9]+$/ and
+                      exists r.gateway_id and r.gateway_id =~ /^[0-9]+$/ and
+                      exists r.equipment_id and r.equipment_id =~ /^[0-9]+$/ and
+                      exists r.tag_id and r.tag_id =~ /^[0-9]+$/
+                  )";
 
             // Adicionar filtros opcionais (suporta múltiplos IDs separados por vírgula)
             if (!string.IsNullOrEmpty(parameters.ColetorId))
@@ -114,6 +120,12 @@ namespace VortexExcelAddIn.DataAccess.InfluxDB
                 from(bucket: ""{_config.Bucket}"")
                   |> range(start: {FormatTimestamp(parameters.StartTime)}, stop: {FormatTimestamp(parameters.EndTime)})
                   |> filter(fn: (r) => r[""_measurement""] == ""dados_rabbitmq"")
+                  |> filter(fn: (r) =>
+                      exists r.coletor_id and r.coletor_id =~ /^[0-9]+$/ and
+                      exists r.gateway_id and r.gateway_id =~ /^[0-9]+$/ and
+                      exists r.equipment_id and r.equipment_id =~ /^[0-9]+$/ and
+                      exists r.tag_id and r.tag_id =~ /^[0-9]+$/
+                  )
                   |> filter(fn: (r) => r[""_field""] == ""valor"")";
 
             // Adicionar filtros opcionais (suporta múltiplos IDs separados por vírgula)
