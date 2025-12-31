@@ -123,7 +123,7 @@ namespace VortexExcelAddIn.ViewModels
 
                 if (connection == null)
                 {
-                    StatusMessage = "Configure a conexão com o banco de dados na aba 'Configuração' antes de consultar dados";
+                    StatusMessage = "Configure a Conexão com o banco de dados na aba 'Configuração' antes de consultar dados";
                     StatusMessageColor = Brushes.Orange;
                     LoggingService.Warn("Tentativa de consulta sem configuração válida");
                     return;
@@ -176,9 +176,9 @@ namespace VortexExcelAddIn.ViewModels
                     PreviewResults.Add(point);
                 }
 
-                StatusMessage = $"Consulta concluída: {Results.Count} registros válidos encontrados";
+                StatusMessage = $"Consulta Concluída: {Results.Count:N0} Registros Válidos Encontrados!";
                 StatusMessageColor = Brushes.Green;
-                LoggingService.Info($"Consulta retornou {Results.Count} registros válidos");
+                LoggingService.Info($"Consulta retornou {Results.Count:N0} registros válidos");
             }
             catch (Exception ex)
             {
@@ -210,9 +210,9 @@ namespace VortexExcelAddIn.ViewModels
                 var dataList = Results.ToList();
                 ExcelService.ExportToSheet(dataList, $"VortexData_{DateTime.Now:yyyyMMdd_HHmmss}");
 
-                StatusMessage = $"Dados exportados para Excel: {Results.Count} registros";
+                StatusMessage = $"Dados Exportados para o Excel: {Results.Count:N0} Registros";
                 StatusMessageColor = Brushes.Green;
-                LoggingService.Info($"Dados exportados para Excel: {Results.Count} registros");
+                LoggingService.Info($"Dados Exportados para o Excel: {Results.Count:N0} Registros");
 
                 // Notificar que dados foram exportados
                 DataExported?.Invoke(this, EventArgs.Empty);
