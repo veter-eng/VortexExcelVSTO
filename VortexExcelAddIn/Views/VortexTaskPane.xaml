@@ -23,7 +23,7 @@
                            FontSize="16"
                            FontWeight="Bold"
                            Foreground="White"/>
-                <TextBlock Text="Importe dados do InfluxDB para o Excel"
+                <TextBlock Text="Importe Dados do Servidor Vortex Historian para o Excel"
                            FontSize="11"
                            Foreground="White"
                            Opacity="0.9"

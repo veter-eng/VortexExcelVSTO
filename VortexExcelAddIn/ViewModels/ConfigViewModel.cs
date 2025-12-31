@@ -25,6 +25,13 @@ namespace VortexExcelAddIn.ViewModels
         private InfluxDbService _influxDbService;
 
         /// <summary>
+        /// Valores fixos para InfluxDB (abstraídos da UI)
+        /// </summary>
+        private const string FIXED_INFLUXDB_URL = "http://localhost:8086";
+        private const string FIXED_INFLUXDB_ORG = "vortex";
+        private const string FIXED_INFLUXDB_BUCKET = "vortex_data";
+
+        /// <summary>
         /// Evento disparado quando a conexão é salva e testada com sucesso
         /// </summary>
         public event EventHandler ConnectionSavedSuccessfully;
@@ -32,16 +39,7 @@ namespace VortexExcelAddIn.ViewModels
         #region Observable Properties
 
         [ObservableProperty]
-        private string _url;
-
-        [ObservableProperty]
         private string _token;
-
-        [ObservableProperty]
-        private string _org;
-
-        [ObservableProperty]
-        private string _bucket;
 
         [ObservableProperty]
         private bool _isSaving;
@@ -93,6 +91,16 @@ namespace VortexExcelAddIn.ViewModels
         [ObservableProperty]
         private bool _useSsl;
 
+        // Propriedades para controlar o botão "Testar Conexão"
+        [ObservableProperty]
+        private string _testConnectionButtonText;
+
+        [ObservableProperty]
+        private Brush _testConnectionButtonBackground;
+
+        [ObservableProperty]
+        private Brush _testConnectionButtonForeground;
+
         #endregion
 
         public ConfigViewModel() : this(new DatabaseConnectionFactory())
@@ -112,6 +120,11 @@ namespace VortexExcelAddIn.ViewModels
             // Inicializar cores de status
             StatusMessageColor = Brushes.Gray;
             UpdateStatusMessage();
+
+            // Inicializar botão "Testar Conexão"
+            TestConnectionButtonText = "Testar Conexão";
+            TestConnectionButtonBackground = new SolidColorBrush(Color.FromRgb(127, 127, 127)); // #7F7F7F
+            TestConnectionButtonForeground = Brushes.White;
         }
 
         /// <summary>
@@ -121,7 +134,7 @@ namespace VortexExcelAddIn.ViewModels
         {
             AvailableDatabaseTypes = new ObservableCollection<DatabaseTypeItem>
             {
-                new DatabaseTypeItem { Type = DatabaseType.InfluxDB, DisplayName = "InfluxDB (Time Series)" },
+                new DatabaseTypeItem { Type = DatabaseType.InfluxDB, DisplayName = "Servidor Vortex Historian" },
                 new DatabaseTypeItem { Type = DatabaseType.PostgreSQL, DisplayName = "PostgreSQL" },
                 new DatabaseTypeItem { Type = DatabaseType.MySQL, DisplayName = "MySQL" },
                 new DatabaseTypeItem { Type = DatabaseType.Oracle, DisplayName = "Oracle Database" },
@@ -164,10 +177,8 @@ namespace VortexExcelAddIn.ViewModels
             if (config.DatabaseType == DatabaseType.InfluxDB)
             {
                 // Campos InfluxDB
-                Url = config.ConnectionSettings.Url ?? string.Empty;
                 Token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
-                Org = config.ConnectionSettings.Org ?? string.Empty;
-                Bucket = config.ConnectionSettings.Bucket ?? string.Empty;
+                // URL, Org e Bucket são valores fixos (não carregados da config)
             }
             else
             {
@@ -202,10 +213,10 @@ namespace VortexExcelAddIn.ViewModels
             {
                 config.ConnectionSettings = new DatabaseConnectionSettings
                 {
-                    Url = Url?.Trim() ?? string.Empty,
+                    Url = FIXED_INFLUXDB_URL,
                     EncryptedToken = Token?.Trim() ?? string.Empty,
-                    Org = Org?.Trim() ?? string.Empty,
-                    Bucket = Bucket?.Trim() ?? string.Empty
+                    Org = FIXED_INFLUXDB_ORG,
+                    Bucket = FIXED_INFLUXDB_BUCKET
                 };
             }
             else
@@ -245,7 +256,7 @@ namespace VortexExcelAddIn.ViewModels
         {
             if (string.IsNullOrEmpty(StatusMessage) || StatusMessage.StartsWith("Configure"))
             {
-                StatusMessage = $"Configure a conexão com {SelectedDatabaseType.GetDisplayName()}";
+                StatusMessage = $"Configure a Conexão com {SelectedDatabaseType.GetDisplayName()}";
             }
         }
 
@@ -343,14 +354,9 @@ namespace VortexExcelAddIn.ViewModels
         {
             if (config.DatabaseType == DatabaseType.InfluxDB)
             {
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Url))
-                    return "URL é obrigatória";
                 if (string.IsNullOrWhiteSpace(config.ConnectionSettings.EncryptedToken))
                     return "Token é obrigatório";
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Org))
-                    return "Organização é obrigatória";
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Bucket))
-                    return "Bucket é obrigatório";
+                // URL, Org e Bucket são fixos, não precisam validação
             }
             else
             {
@@ -413,9 +419,14 @@ namespace VortexExcelAddIn.ViewModels
                         StatusMessage = $"Conexão estabelecida com sucesso! ({SelectedDatabaseType.GetDisplayName()})";
                         if (result.Latency.TotalMilliseconds > 0)
                         {
-                            StatusMessage += $" - Latência: {result.Latency.TotalMilliseconds:F0}ms";
+                            StatusMessage += $"\nLatência: {result.Latency.TotalMilliseconds:F0}ms";
                         }
                         StatusMessageColor = Brushes.Green;
+
+                        // Atualizar botão "Testar Conexão" para verde com "Conectado!"
+                        TestConnectionButtonText = "Conectado!";
+                        TestConnectionButtonBackground = Brushes.Green;
+                        TestConnectionButtonForeground = Brushes.White;
 
                         // Atualizar conexão principal
                         _dataSourceConnection?.Dispose();
@@ -428,6 +439,12 @@ namespace VortexExcelAddIn.ViewModels
                         IsConnected = false;
                         StatusMessage = $"Falha na conexão: {result.Message}";
                         StatusMessageColor = Brushes.Red;
+
+                        // Atualizar botão "Testar Conexão" para vermelho
+                        TestConnectionButtonText = "Testar Conexão";
+                        TestConnectionButtonBackground = Brushes.Red;
+                        TestConnectionButtonForeground = Brushes.White;
+
                         LoggingService.Error($"Falha ao testar conexão: {result.Message}");
                     }
                 }
@@ -437,6 +454,12 @@ namespace VortexExcelAddIn.ViewModels
                 IsConnected = false;
                 StatusMessage = $"Erro: {ex.Message}";
                 StatusMessageColor = Brushes.Red;
+
+                // Atualizar botão "Testar Conexão" para vermelho
+                TestConnectionButtonText = "Testar Conexão";
+                TestConnectionButtonBackground = Brushes.Red;
+                TestConnectionButtonForeground = Brushes.White;
+
                 LoggingService.Error($"Falha ao testar conexão: {ex.Message}", ex);
                 throw;
             }
@@ -450,8 +473,7 @@ namespace VortexExcelAddIn.ViewModels
             if (_influxDbService == null)
             {
                 // Verificar se há configuração válida
-                if (string.IsNullOrWhiteSpace(Url) || string.IsNullOrWhiteSpace(Token) ||
-                    string.IsNullOrWhiteSpace(Org) || string.IsNullOrWhiteSpace(Bucket))
+                if (string.IsNullOrWhiteSpace(Token))
                 {
                     LoggingService.Warn("Tentativa de criar serviço InfluxDB sem configuração completa");
                     return null;
@@ -459,10 +481,10 @@ namespace VortexExcelAddIn.ViewModels
 
                 var config = new InfluxDBConfig
                 {
-                    Url = Url,
+                    Url = FIXED_INFLUXDB_URL,
                     Token = Token,
-                    Org = Org,
-                    Bucket = Bucket
+                    Org = FIXED_INFLUXDB_ORG,
+                    Bucket = FIXED_INFLUXDB_BUCKET
                 };
                 _influxDbService = new InfluxDbService(config);
                 LoggingService.Info("Serviço InfluxDB criado automaticamente");
