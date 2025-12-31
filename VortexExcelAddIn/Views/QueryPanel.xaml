@@ -7,6 +7,16 @@
     <UserControl.Resources>
         <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <local:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+
+        <!-- Estilo para ícone de informação -->
+        <Style x:Key="InfoIconStyle" TargetType="TextBlock">
+            <Setter Property="Text" Value="ⓘ"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#4472C4"/>
+            <Setter Property="Cursor" Value="Help"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+        </Style>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -29,30 +39,54 @@
 
                     <!-- Coletor -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Coletor:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Coletor:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Digite os IDs separados por vírgula ou deixe vazio para todos"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding ColetorIds, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Digite os IDs separados por vírgula ou deixe vazio para todos" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- Gateway -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Gateway:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Gateway:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Digite os IDs separados por vírgula ou deixe vazio para todos"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding GatewayIds, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Digite os IDs separados por vírgula ou deixe vazio para todos" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- Equipamento -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Equipamento:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Equipamento:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Digite os IDs separados por vírgula ou deixe vazio para todos"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding EquipmentIds, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Digite os IDs separados por vírgula ou deixe vazio para todos" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
 
                     <!-- Tag -->
                     <StackPanel>
-                        <TextBlock Text="Tag:" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Tag:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Digite os IDs separados por vírgula ou deixe vazio para todos"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
                         <TextBox Text="{Binding TagIds, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                        <TextBlock Text="Digite os IDs separados por vírgula ou deixe vazio para todos" FontSize="11" Foreground="#666666" FontStyle="Italic"/>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
@@ -96,22 +130,10 @@
             </GroupBox>
 
             <!-- Status -->
-            <GroupBox Header="Status" Margin="0,0,0,10" Padding="10">
+            <GroupBox Header="Status" Margin="0,0,0,0" Padding="10">
                 <TextBlock Text="{Binding StatusMessage}"
                            Foreground="{Binding StatusMessageColor}"
                            TextWrapping="Wrap"/>
-            </GroupBox>
-
-            <!-- Debug Info -->
-            <GroupBox Header="Informações de Debug (Query e Resposta)" Margin="0,0,0,0" Padding="10">
-                <ScrollViewer Height="200" VerticalScrollBarVisibility="Auto">
-                    <TextBox Text="{Binding DebugInfo, Mode=OneWay}"
-                             IsReadOnly="True"
-                             TextWrapping="Wrap"
-                             FontFamily="Consolas"
-                             FontSize="10"
-                             Background="#F5F5F5"/>
-                </ScrollViewer>
             </GroupBox>
         </StackPanel>
     </ScrollViewer>
