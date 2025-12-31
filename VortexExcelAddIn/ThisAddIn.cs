@@ -16,6 +16,7 @@ namespace VortexExcelAddIn
     {
         private Microsoft.Office.Tools.CustomTaskPane _taskPane;
         private VortexTaskPane _taskPaneControl;
+        private Domain.Interfaces.IAutoRefreshService _autoRefreshService;
 
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
@@ -37,6 +38,12 @@ namespace VortexExcelAddIn
                 _taskPane = this.CustomTaskPanes.Add(userControl, "Vortex Data Plugin");
                 _taskPane.Width = 450;
                 _taskPane.Visible = false;
+
+                // Inicializar serviço de auto-refresh
+                InitializeAutoRefreshService();
+
+                // Subscrever evento de abertura de workbook
+                this.Application.WorkbookOpen += Application_WorkbookOpen;
 
                 try
                 {
@@ -71,6 +78,9 @@ namespace VortexExcelAddIn
         {
             try
             {
+                // Cleanup auto-refresh
+                _autoRefreshService?.Dispose();
+
                 LoggingService.Info("Vortex Excel Add-in encerrando");
                 LoggingService.Flush();
                 LoggingService.Shutdown();
@@ -115,6 +125,204 @@ namespace VortexExcelAddIn
                 _taskPane.Visible = !_taskPane.Visible;
                 LoggingService.Debug($"TaskPane alternado: {_taskPane.Visible}");
             }
+        }
+
+        /// <summary>
+        /// Inicializa o serviço de auto-refresh com dependências.
+        /// </summary>
+        private void InitializeAutoRefreshService()
+        {
+            try
+            {
+                // Obter Dispatcher do controle WPF
+                var dispatcher = _taskPaneControl.Dispatcher;
+
+                // Obter ConfigViewModel do MainViewModel
+                var mainViewModel = _taskPaneControl.DataContext as ViewModels.MainViewModel;
+                var configViewModel = mainViewModel?.ConfigViewModel;
+
+                if (configViewModel == null)
+                {
+                    LoggingService.Error("Não foi possível inicializar auto-refresh: ConfigViewModel não encontrado");
+                    return;
+                }
+
+                // Criar serviço de timer
+                var timerService = new Services.SystemTimerService();
+
+                // Criar serviço de auto-refresh
+                _autoRefreshService = new Services.AutoRefreshService(
+                    timerService,
+                    configViewModel,
+                    dispatcher);
+
+                // Subscrever eventos para atualizações do ribbon
+                _autoRefreshService.RefreshStarted += OnAutoRefreshStateChanged;
+                _autoRefreshService.RefreshCompleted += OnAutoRefreshStateChanged;
+                _autoRefreshService.RefreshFailed += OnAutoRefreshStateChanged;
+
+                // Inicializar ViewModel no task pane
+                var autoRefreshViewModel = new ViewModels.AutoRefreshViewModel(
+                    _autoRefreshService,
+                    mainViewModel.QueryViewModel);
+
+                // Armazenar no MainViewModel para acesso
+                mainViewModel.AutoRefreshViewModel = autoRefreshViewModel;
+
+                // Subscrever ao evento de exportação de dados para habilitar botão Refresh
+                mainViewModel.DataExportedToExcel += OnDataExportedToExcel;
+
+                LoggingService.Info("Serviço de auto-refresh inicializado");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Falha ao inicializar serviço de auto-refresh", ex);
+            }
+        }
+
+        /// <summary>
+        /// Handler para evento de abertura de workbook.
+        /// </summary>
+        private void Application_WorkbookOpen(Excel.Workbook wb)
+        {
+            try
+            {
+                LoggingService.Info($"Workbook aberto: {wb.Name}");
+
+                // REMOVIDO: Não ativar automaticamente ao abrir workbook
+                // O usuário deve clicar explicitamente em "Iniciar Refresh" para ativar
+                // _autoRefreshService?.LoadAndActivate();
+
+                // Atualizar estado do botão ribbon
+                UpdateRibbonAutoRefreshButton();
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao processar abertura de workbook", ex);
+            }
+        }
+
+        /// <summary>
+        /// Exibe o diálogo de configuração de auto-refresh.
+        /// Chamado pelo clique no botão do Ribbon.
+        /// </summary>
+        public void ShowAutoRefreshDialog()
+        {
+            try
+            {
+                var mainViewModel = _taskPaneControl.DataContext as ViewModels.MainViewModel;
+                var autoRefreshViewModel = mainViewModel?.AutoRefreshViewModel;
+
+                if (autoRefreshViewModel == null)
+                {
+                    MessageBox.Show("Auto-refresh não está disponível", "Erro",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var dialog = new Views.AutoRefreshDialog
+                {
+                    DataContext = autoRefreshViewModel
+                };
+
+                dialog.ShowDialog();
+
+                // Atualizar ribbon após fechamento do diálogo
+                UpdateRibbonAutoRefreshButton();
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao exibir diálogo de auto-refresh", ex);
+                MessageBox.Show($"Erro: {ex.Message}", "Erro",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Para o auto-refresh.
+        /// Chamado pelo menu dropdown do botão do Ribbon.
+        /// </summary>
+        public void StopAutoRefresh()
+        {
+            try
+            {
+                _autoRefreshService?.Stop();
+                UpdateRibbonAutoRefreshButton();
+                LoggingService.Info("Auto-refresh parado via Ribbon menu");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao parar auto-refresh", ex);
+                MessageBox.Show($"Erro ao parar auto-refresh: {ex.Message}", "Erro",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Executa um refresh manual imediatamente.
+        /// Chamado pelo menu dropdown do botão do Ribbon.
+        /// </summary>
+        public async void RefreshNow()
+        {
+            try
+            {
+                if (_autoRefreshService == null)
+                {
+                    MessageBox.Show("Serviço de refresh não está disponível", "Erro",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                LoggingService.Info("Refresh manual iniciado via Ribbon menu");
+                await _autoRefreshService.RefreshNowAsync();
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao executar refresh manual", ex);
+                MessageBox.Show($"Erro ao executar refresh: {ex.Message}", "Erro",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Handler para evento de exportação de dados.
+        /// Habilita o botão Refresh quando dados são exportados para Excel.
+        /// </summary>
+        private void OnDataExportedToExcel(object sender, EventArgs e)
+        {
+            try
+            {
+                Globals.Ribbons.Ribbon1.EnableRefreshButton(true);
+                LoggingService.Debug("Botão Refresh habilitado após exportação de dados");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao habilitar botão Refresh", ex);
+            }
+        }
+
+        /// <summary>
+        /// Atualiza o botão do ribbon baseado no estado de auto-refresh.
+        /// </summary>
+        private void UpdateRibbonAutoRefreshButton()
+        {
+            try
+            {
+                var isActive = _autoRefreshService?.IsActive ?? false;
+                Globals.Ribbons.Ribbon1.UpdateAutoRefreshButton(isActive);
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao atualizar botão do ribbon", ex);
+            }
+        }
+
+        /// <summary>
+        /// Handler para mudanças de estado do auto-refresh.
+        /// </summary>
+        private void OnAutoRefreshStateChanged(object sender, EventArgs e)
+        {
+            UpdateRibbonAutoRefreshButton();
         }
 
         #region Código gerado por VSTO

@@ -24,6 +24,11 @@ namespace VortexExcelAddIn.ViewModels
         // Mantido para backward compatibility temporária
         private InfluxDbService _influxDbService;
 
+        /// <summary>
+        /// Evento disparado quando a conexão é salva e testada com sucesso
+        /// </summary>
+        public event EventHandler ConnectionSavedSuccessfully;
+
         #region Observable Properties
 
         [ObservableProperty]
@@ -313,6 +318,9 @@ namespace VortexExcelAddIn.ViewModels
                     StatusMessage = $"Configuração salva e conexão testada com sucesso! ({SelectedDatabaseType.GetDisplayName()})";
                     StatusMessageColor = Brushes.Green;
                     LoggingService.Info($"Configuração salva e testada: {SelectedDatabaseType}");
+
+                    // Disparar evento para navegar automaticamente para a aba de Query
+                    ConnectionSavedSuccessfully?.Invoke(this, EventArgs.Empty);
                 }
             }
             catch (Exception ex)

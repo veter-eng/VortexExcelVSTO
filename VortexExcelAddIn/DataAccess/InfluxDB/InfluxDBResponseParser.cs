@@ -85,7 +85,6 @@ namespace VortexExcelAddIn.DataAccess.InfluxDB
 
                 // Parse dos dados
                 int dataLineCount = 0;
-                int invalidIdCount = 0;
 
                 for (int i = dataStartIndex; i < lines.Length; i++)
                 {
@@ -165,26 +164,29 @@ namespace VortexExcelAddIn.DataAccess.InfluxDB
                         TagId = tagIndex >= 0 && tagIndex < values.Length ? CleanCsvValue(values[tagIndex]) : string.Empty
                     };
 
-                    // Validar se os IDs são numéricos ou vazios (filtrar valores inválidos como "dados_rabbitmq")
-                    bool isValidColetorId = string.IsNullOrWhiteSpace(dataPoint.ColetorId) ||
-                                           int.TryParse(dataPoint.ColetorId, out _);
-                    bool isValidGatewayId = string.IsNullOrWhiteSpace(dataPoint.GatewayId) ||
-                                           int.TryParse(dataPoint.GatewayId, out _);
-                    bool isValidEquipmentId = string.IsNullOrWhiteSpace(dataPoint.EquipmentId) ||
-                                             int.TryParse(dataPoint.EquipmentId, out _);
-                    bool isValidTagId = string.IsNullOrWhiteSpace(dataPoint.TagId) ||
-                                       int.TryParse(dataPoint.TagId, out _);
-
-                    // Se algum ID for inválido, ignorar o registro
-                    if (!isValidColetorId || !isValidGatewayId || !isValidEquipmentId || !isValidTagId)
-                    {
-                        invalidIdCount++;
-                        if (invalidIdCount <= 10)  // Logar apenas os primeiros 10 para não poluir
-                        {
-                            LoggingService.Debug($"Linha {i} ignorada - IDs não numéricos: Coletor=[{dataPoint.ColetorId}], Gateway=[{dataPoint.GatewayId}], Equipment=[{dataPoint.EquipmentId}], Tag=[{dataPoint.TagId}]");
-                        }
-                        continue;
-                    }
+                    // REMOVIDO: Validação de IDs numéricos estava filtrando registros válidos
+                    // Isso causava retorno de menos de 1000 registros mesmo com limit=1000
+                    // Os IDs são strings no modelo e devem aceitar qualquer valor
+                    //
+                    // Código anterior (comentado para referência):
+                    // bool isValidColetorId = string.IsNullOrWhiteSpace(dataPoint.ColetorId) ||
+                    //                        int.TryParse(dataPoint.ColetorId, out _);
+                    // bool isValidGatewayId = string.IsNullOrWhiteSpace(dataPoint.GatewayId) ||
+                    //                        int.TryParse(dataPoint.GatewayId, out _);
+                    // bool isValidEquipmentId = string.IsNullOrWhiteSpace(dataPoint.EquipmentId) ||
+                    //                          int.TryParse(dataPoint.EquipmentId, out _);
+                    // bool isValidTagId = string.IsNullOrWhiteSpace(dataPoint.TagId) ||
+                    //                    int.TryParse(dataPoint.TagId, out _);
+                    //
+                    // if (!isValidColetorId || !isValidGatewayId || !isValidEquipmentId || !isValidTagId)
+                    // {
+                    //     invalidIdCount++;
+                    //     if (invalidIdCount <= 10)
+                    //     {
+                    //         LoggingService.Debug($"Linha {i} ignorada - IDs não numéricos: Coletor=[{dataPoint.ColetorId}], Gateway=[{dataPoint.GatewayId}], Equipment=[{dataPoint.EquipmentId}], Tag=[{dataPoint.TagId}]");
+                    //     }
+                    //     continue;
+                    // }
 
                     dataPoints.Add(dataPoint);
 
@@ -195,11 +197,7 @@ namespace VortexExcelAddIn.DataAccess.InfluxDB
                     }
                 }
 
-                LoggingService.Info($"Total de registros válidos: {dataLineCount}");
-                if (invalidIdCount > 0)
-                {
-                    LoggingService.Info($"Total de registros filtrados (IDs não numéricos): {invalidIdCount}");
-                }
+                LoggingService.Info($"Total de registros parseados: {dataLineCount}");
             }
             catch (Exception ex)
             {
