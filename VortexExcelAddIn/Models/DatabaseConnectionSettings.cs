@@ -68,6 +68,22 @@ namespace VortexExcelAddIn.Models
         /// </summary>
         public string ConnectionString { get; set; }
 
+        // Campos específicos para Vortex API
+        /// <summary>
+        /// URL da API do Vortex IO (ex: http://localhost:8000).
+        /// </summary>
+        public string ApiUrl { get; set; }
+
+        /// <summary>
+        /// ID da conexão no banco de dados da API.
+        /// </summary>
+        public int ApiConnectionId { get; set; }
+
+        /// <summary>
+        /// Timeout para requisições da API em segundos.
+        /// </summary>
+        public int ApiTimeout { get; set; }
+
         /// <summary>
         /// Campos customizados adicionais (não serializados em XML).
         /// </summary>
@@ -79,6 +95,7 @@ namespace VortexExcelAddIn.Models
             CustomFields = new Dictionary<string, string>();
             UseSsl = false;
             Port = 0;
+            ApiTimeout = 30; // Default 30 seconds
         }
     }
 }
