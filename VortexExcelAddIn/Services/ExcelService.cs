@@ -28,7 +28,10 @@ namespace VortexExcelAddIn.Services
         /// <summary>
         /// Exporta dados para uma planilha (ativa ou nova)
         /// </summary>
-        public static void ExportToSheet(List<VortexDataPoint> data, string sheetName = null)
+        /// <param name="data">Lista de dados para exportar</param>
+        /// <param name="sheetName">Nome da planilha (opcional)</param>
+        /// <param name="databaseType">Tipo de banco de dados para ajustar headers</param>
+        public static void ExportToSheet(List<VortexDataPoint> data, string sheetName = null, Domain.Models.DatabaseType? databaseType = null)
         {
             if (data == null || data.Count == 0)
             {
@@ -74,35 +77,64 @@ namespace VortexExcelAddIn.Services
                 }
 
                 // Preparar array 2D (mais eficiente que célula por célula)
-                object[,] values = new object[data.Count + 1, 6];
+                // VortexIO tem 5 colunas (sem Coletor ID), Vortex Historian tem 6 colunas
+                bool isVortexIO = databaseType == Domain.Models.DatabaseType.VortexAPI;
+                int columnCount = isVortexIO ? 5 : 6;
+                object[,] values = new object[data.Count + 1, columnCount];
 
-                // Cabeçalhos
-                values[0, 0] = "Timestamp";
-                values[0, 1] = "Coletor ID";
-                values[0, 2] = "Gateway ID";
-                values[0, 3] = "Equipment ID";
-                values[0, 4] = "Tag ID";
-                values[0, 5] = "Valor";
+                // Cabeçalhos - Ajustados para VortexIO (dados_airflow) vs Vortex Historian (dados_rabbitmq)
+                if (isVortexIO)
+                {
+                    // VortexIO: Timestamp, Campo, Tipo de Agregação, Tag ID, Valor
+                    values[0, 0] = "Timestamp";
+                    values[0, 1] = "Campo";  // _field (avg_valor, sum_valor, etc.)
+                    values[0, 2] = "Tipo de Agregação";  // aggregation_type (average_60m, total_60m, etc.)
+                    values[0, 3] = "Tag ID";
+                    values[0, 4] = "Valor";
+                }
+                else
+                {
+                    // Vortex Historian: Timestamp, Coletor ID, Gateway ID, Equipment ID, Tag ID, Valor
+                    values[0, 0] = "Timestamp";
+                    values[0, 1] = "Coletor ID";
+                    values[0, 2] = "Gateway ID";
+                    values[0, 3] = "Equipment ID";
+                    values[0, 4] = "Tag ID";
+                    values[0, 5] = "Valor";
+                }
 
                 // Dados
                 for (int i = 0; i < data.Count; i++)
                 {
-                    values[i + 1, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
-                    values[i + 1, 1] = data[i].ColetorId;
-                    values[i + 1, 2] = data[i].GatewayId;
-                    values[i + 1, 3] = data[i].EquipmentId;
-                    values[i + 1, 4] = data[i].TagId;
-                    values[i + 1, 5] = data[i].Valor;
+                    if (isVortexIO)
+                    {
+                        // VortexIO: Skip ColetorId (not used)
+                        values[i + 1, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
+                        values[i + 1, 1] = data[i].GatewayId;  // Campo (_field)
+                        values[i + 1, 2] = data[i].EquipmentId;  // Tipo de Agregação
+                        values[i + 1, 3] = data[i].TagId;
+                        values[i + 1, 4] = data[i].Valor;
+                    }
+                    else
+                    {
+                        // Vortex Historian: All fields
+                        values[i + 1, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
+                        values[i + 1, 1] = data[i].ColetorId;
+                        values[i + 1, 2] = data[i].GatewayId;
+                        values[i + 1, 3] = data[i].EquipmentId;
+                        values[i + 1, 4] = data[i].TagId;
+                        values[i + 1, 5] = data[i].Valor;
+                    }
                 }
 
                 // Escrever dados em batch (muito mais rápido)
                 range = (Excel.Range)sheet.Cells[1, 1];
-                range = range.Resize[data.Count + 1, 6];
+                range = range.Resize[data.Count + 1, columnCount];
                 range.Value2 = values;
 
                 // Formatar cabeçalhos
                 headerRange = (Range)sheet.Cells[1, 1];
-                headerRange = headerRange.Resize[1, 6];
+                headerRange = headerRange.Resize[1, columnCount];
                 headerRange.Font.Bold = true;
                 headerRange.Interior.Color = ColorTranslator.ToOle(PrimaryColor);
                 headerRange.Font.Color = ColorTranslator.ToOle(WhiteColor);
