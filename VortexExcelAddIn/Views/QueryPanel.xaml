@@ -7,6 +7,7 @@
     <UserControl.Resources>
         <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <local:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 
         <!-- Estilo para ícone de informação -->
         <Style x:Key="InfoIconStyle" TargetType="TextBlock">
@@ -37,8 +38,9 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Coletor -->
-                    <StackPanel Margin="0,0,0,10">
+                    <!-- Coletor - Apenas para Vortex Historian -->
+                    <StackPanel Margin="0,0,0,10"
+                               Visibility="{Binding IsVortexHistorian, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="Coletor:" FontWeight="Medium"/>
                             <TextBlock Style="{StaticResource InfoIconStyle}">
@@ -50,8 +52,9 @@
                         <TextBox Text="{Binding ColetorIds, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
                     </StackPanel>
 
-                    <!-- Gateway -->
-                    <StackPanel Margin="0,0,0,10">
+                    <!-- Gateway - Apenas para Vortex Historian -->
+                    <StackPanel Margin="0,0,0,10"
+                               Visibility="{Binding IsVortexHistorian, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="Gateway:" FontWeight="Medium"/>
                             <TextBlock Style="{StaticResource InfoIconStyle}">
@@ -63,8 +66,9 @@
                         <TextBox Text="{Binding GatewayIds, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
                     </StackPanel>
 
-                    <!-- Equipamento -->
-                    <StackPanel Margin="0,0,0,10">
+                    <!-- Equipamento - Apenas para Vortex Historian -->
+                    <StackPanel Margin="0,0,0,10"
+                               Visibility="{Binding IsVortexHistorian, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="Equipamento:" FontWeight="Medium"/>
                             <TextBlock Style="{StaticResource InfoIconStyle}">
@@ -114,19 +118,38 @@
                       Margin="0,0,0,15"
                       Padding="10"
                       Visibility="{Binding PreviewResults.Count, Converter={StaticResource CountToVisibilityConverter}}">
-                <DataGrid ItemsSource="{Binding PreviewResults}"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          Height="200">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time}" Width="150"/>
-                        <DataGridTextColumn Header="Coletor" Binding="{Binding ColetorId}" Width="100"/>
-                        <DataGridTextColumn Header="Gateway" Binding="{Binding GatewayId}" Width="100"/>
-                        <DataGridTextColumn Header="Equipamento" Binding="{Binding EquipmentId}" Width="120"/>
-                        <DataGridTextColumn Header="Tag" Binding="{Binding TagId}" Width="100"/>
-                        <DataGridTextColumn Header="Valor" Binding="{Binding Valor}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid>
+                    <!-- DataGrid para VortexIO (5 colunas: Timestamp, Campo, Tipo de Agregação, Tag, Valor) -->
+                    <DataGrid ItemsSource="{Binding PreviewResults}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Height="200"
+                              Visibility="{Binding IsVortexIO, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time}" Width="150"/>
+                            <DataGridTextColumn Header="Campo" Binding="{Binding GatewayId}" Width="100"/>
+                            <DataGridTextColumn Header="Tipo de Agregação" Binding="{Binding EquipmentId}" Width="140"/>
+                            <DataGridTextColumn Header="Tag" Binding="{Binding TagId}" Width="100"/>
+                            <DataGridTextColumn Header="Valor" Binding="{Binding Valor}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- DataGrid para Vortex Historian (6 colunas: Timestamp, Coletor, Gateway, Equipment, Tag, Valor) -->
+                    <DataGrid ItemsSource="{Binding PreviewResults}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Height="200"
+                              Visibility="{Binding IsVortexHistorian, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time}" Width="150"/>
+                            <DataGridTextColumn Header="Coletor" Binding="{Binding ColetorId}" Width="100"/>
+                            <DataGridTextColumn Header="Gateway" Binding="{Binding GatewayId}" Width="100"/>
+                            <DataGridTextColumn Header="Equipamento" Binding="{Binding EquipmentId}" Width="120"/>
+                            <DataGridTextColumn Header="Tag" Binding="{Binding TagId}" Width="100"/>
+                            <DataGridTextColumn Header="Valor" Binding="{Binding Valor}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
             </GroupBox>
 
             <!-- Status -->
