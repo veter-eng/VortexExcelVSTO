@@ -25,19 +25,13 @@ namespace VortexExcelAddIn.ViewModels
         private InfluxDbService _influxDbService;
 
         /// <summary>
-        /// Valores fixos para InfluxDB (abstraídos da UI)
-        /// </summary>
-        private const string FIXED_INFLUXDB_URL = "http://localhost:8086";
-        private const string FIXED_INFLUXDB_ORG = "vortex";
-        private const string FIXED_INFLUXDB_BUCKET = "vortex_data";
-
-        /// <summary>
         /// Evento disparado quando a conexão é salva e testada com sucesso
         /// </summary>
         public event EventHandler ConnectionSavedSuccessfully;
 
         #region Observable Properties
 
+        // Campo para InfluxDB (apenas Token configurável)
         [ObservableProperty]
         private string _token;
 
@@ -65,6 +59,12 @@ namespace VortexExcelAddIn.ViewModels
 
         [ObservableProperty]
         private bool _isRelationalDatabase;
+
+        [ObservableProperty]
+        private bool _isInfluxDbConnection;
+
+        [ObservableProperty]
+        private bool _isVortexApiConnection;
 
         // Campos para bancos relacionais
         [ObservableProperty]
@@ -135,10 +135,7 @@ namespace VortexExcelAddIn.ViewModels
             AvailableDatabaseTypes = new ObservableCollection<DatabaseTypeItem>
             {
                 new DatabaseTypeItem { Type = DatabaseType.InfluxDB, DisplayName = "Servidor Vortex Historian" },
-                new DatabaseTypeItem { Type = DatabaseType.PostgreSQL, DisplayName = "PostgreSQL" },
-                new DatabaseTypeItem { Type = DatabaseType.MySQL, DisplayName = "MySQL" },
-                new DatabaseTypeItem { Type = DatabaseType.Oracle, DisplayName = "Oracle Database" },
-                new DatabaseTypeItem { Type = DatabaseType.SqlServer, DisplayName = "SQL Server" }
+                new DatabaseTypeItem { Type = DatabaseType.VortexAPI, DisplayName = "Servidor VortexIO" }
             };
         }
 
@@ -174,15 +171,16 @@ namespace VortexExcelAddIn.ViewModels
 
             SelectedDatabaseType = config.DatabaseType;
 
-            if (config.DatabaseType == DatabaseType.InfluxDB)
+            if (config.DatabaseType == DatabaseType.VortexAPI)
             {
-                // Campos InfluxDB
                 Token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
-                // URL, Org e Bucket são valores fixos (não carregados da config)
+            }
+            else if (config.DatabaseType == DatabaseType.InfluxDB)
+            {
+                Token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
             }
             else
             {
-                // Campos relacionais
                 Host = config.ConnectionSettings.Host ?? string.Empty;
                 Port = config.ConnectionSettings.Port;
                 Username = config.ConnectionSettings.Username ?? string.Empty;
@@ -209,14 +207,24 @@ namespace VortexExcelAddIn.ViewModels
                 ConfigVersion = 2
             };
 
-            if (SelectedDatabaseType == DatabaseType.InfluxDB)
+            if (SelectedDatabaseType == DatabaseType.VortexAPI)
             {
                 config.ConnectionSettings = new DatabaseConnectionSettings
                 {
-                    Url = FIXED_INFLUXDB_URL,
+                    Url = "http://localhost:8086",
                     EncryptedToken = Token?.Trim() ?? string.Empty,
-                    Org = FIXED_INFLUXDB_ORG,
-                    Bucket = FIXED_INFLUXDB_BUCKET
+                    Org = "vortex",
+                    Bucket = "dados_airflow"
+                };
+            }
+            else if (SelectedDatabaseType == DatabaseType.InfluxDB)
+            {
+                config.ConnectionSettings = new DatabaseConnectionSettings
+                {
+                    Url = "http://localhost:8086",
+                    EncryptedToken = Token?.Trim() ?? string.Empty,
+                    Org = "vortex",
+                    Bucket = "vortex_data"
                 };
             }
             else
@@ -247,6 +255,8 @@ namespace VortexExcelAddIn.ViewModels
         private void UpdateFieldsVisibility()
         {
             IsRelationalDatabase = SelectedDatabaseType.IsRelational();
+            IsInfluxDbConnection = SelectedDatabaseType == DatabaseType.InfluxDB;
+            IsVortexApiConnection = SelectedDatabaseType == DatabaseType.VortexAPI;
         }
 
         /// <summary>
@@ -352,25 +362,30 @@ namespace VortexExcelAddIn.ViewModels
         /// </summary>
         private string GetValidationErrorMessage(UnifiedDatabaseConfig config)
         {
+            if (config.DatabaseType == DatabaseType.VortexAPI)
+            {
+                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.EncryptedToken))
+                    return "Token é obrigatório";
+                return null;
+            }
+
             if (config.DatabaseType == DatabaseType.InfluxDB)
             {
                 if (string.IsNullOrWhiteSpace(config.ConnectionSettings.EncryptedToken))
                     return "Token é obrigatório";
-                // URL, Org e Bucket são fixos, não precisam validação
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Host))
-                    return "Host é obrigatório";
-                if (config.ConnectionSettings.Port <= 0)
-                    return "Porta é obrigatória";
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.DatabaseName))
-                    return "Nome do banco de dados é obrigatório";
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Username))
-                    return "Usuário é obrigatório";
+                return null;
             }
 
-            return "Configuração inválida. Verifique os campos obrigatórios.";
+            if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Host))
+                return "Host é obrigatório";
+            if (config.ConnectionSettings.Port <= 0)
+                return "Porta é obrigatória";
+            if (string.IsNullOrWhiteSpace(config.ConnectionSettings.DatabaseName))
+                return "Nome do banco de dados é obrigatório";
+            if (string.IsNullOrWhiteSpace(config.ConnectionSettings.Username))
+                return "Usuário é obrigatório";
+
+            return null;
         }
 
         /// <summary>
@@ -481,13 +496,13 @@ namespace VortexExcelAddIn.ViewModels
 
                 var config = new InfluxDBConfig
                 {
-                    Url = FIXED_INFLUXDB_URL,
+                    Url = "http://localhost:8086",
                     Token = Token,
-                    Org = FIXED_INFLUXDB_ORG,
-                    Bucket = FIXED_INFLUXDB_BUCKET
+                    Org = "vortex",
+                    Bucket = "vortex_data"
                 };
                 _influxDbService = new InfluxDbService(config);
-                LoggingService.Info("Serviço InfluxDB criado automaticamente");
+                LoggingService.Info("Serviço InfluxDB criado com valores fixos");
             }
 
             return _influxDbService;
