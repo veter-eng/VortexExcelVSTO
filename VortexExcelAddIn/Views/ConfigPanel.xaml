@@ -40,9 +40,9 @@
                           Padding="8,6"/>
             </StackPanel>
 
-            <!-- Campos para InfluxDB -->
-            <GroupBox Header="Configuração Vortex Historian"
-                      Visibility="{Binding IsRelationalDatabase, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+            <!-- Campos para Servidor VortexIO -->
+            <GroupBox Header="Configuração Servidor VortexIO"
+                      Visibility="{Binding IsVortexApiConnection, Converter={StaticResource BoolToVisibilityConverter}}"
                       Margin="0,0,0,15"
                       Padding="10">
                 <StackPanel>
@@ -52,7 +52,28 @@
                             <TextBlock Text="Token de API:" FontWeight="Medium"/>
                             <TextBlock Style="{StaticResource InfoIconStyle}">
                                 <TextBlock.ToolTip>
-                                    <ToolTip Content="Token de autenticação do Servidor Vortex Historian"/>
+                                    <ToolTip Content="Token de autenticação do InfluxDB"/>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBox Text="{Binding Token, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Campos para InfluxDB (Servidor Vortex Historian) -->
+            <GroupBox Header="Configuração Vortex Historian"
+                      Visibility="{Binding IsInfluxDbConnection, Converter={StaticResource BoolToVisibilityConverter}}"
+                      Margin="0,0,0,15"
+                      Padding="10">
+                <StackPanel>
+                    <!-- Token -->
+                    <StackPanel Margin="0,0,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Token de API:" FontWeight="Medium"/>
+                            <TextBlock Style="{StaticResource InfoIconStyle}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="Token de autenticação do InfluxDB"/>
                                 </TextBlock.ToolTip>
                             </TextBlock>
                         </StackPanel>
