@@ -57,6 +57,9 @@ namespace VortexExcelAddIn.Models
                            !string.IsNullOrEmpty(ConnectionSettings.Org) &&
                            !string.IsNullOrEmpty(ConnectionSettings.Bucket);
 
+                case DatabaseType.VortexAPI:
+                    return !string.IsNullOrEmpty(ConnectionSettings.EncryptedToken);
+
                 case DatabaseType.PostgreSQL:
                 case DatabaseType.MySQL:
                 case DatabaseType.Oracle:

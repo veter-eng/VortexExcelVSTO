@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using VortexExcelAddIn.Application.Security;
 using VortexExcelAddIn.DataAccess.InfluxDB;
 using VortexExcelAddIn.DataAccess.PostgreSQL;
+using VortexExcelAddIn.DataAccess.VortexAPI;
 using VortexExcelAddIn.Domain.Interfaces;
 using VortexExcelAddIn.Domain.Models;
 using VortexExcelAddIn.Models;
@@ -26,6 +27,7 @@ namespace VortexExcelAddIn.Application.Factories
             // Registrar factories para cada banco (OCP - extensível sem modificação)
             _factories = new Dictionary<DatabaseType, Func<UnifiedDatabaseConfig, IDataSourceConnection>>
             {
+                { DatabaseType.VortexAPI, CreateVortexApiConnection },
                 { DatabaseType.InfluxDB, CreateInfluxDbConnection },
                 { DatabaseType.PostgreSQL, CreatePostgreSqlConnection }
                 // MySQL, Oracle e SQL Server serão adicionados nas próximas fases
@@ -74,6 +76,20 @@ namespace VortexExcelAddIn.Application.Factories
         {
             switch (type)
             {
+                case DatabaseType.VortexAPI:
+                    LoggingService.Debug("Criando configuração padrão para Vortex API (usa mesmas credenciais do InfluxDB)");
+                    return new UnifiedDatabaseConfig
+                    {
+                        DatabaseType = DatabaseType.VortexAPI,
+                        ConnectionSettings = new DatabaseConnectionSettings
+                        {
+                            Url = "http://localhost:8086",
+                            Org = "vortex",
+                            Bucket = "vortex_data",
+                            EncryptedToken = string.Empty
+                        }
+                    };
+
                 case DatabaseType.InfluxDB:
                     LoggingService.Debug("Criando configuração padrão para InfluxDB");
                     return new UnifiedDatabaseConfig
@@ -237,6 +253,84 @@ namespace VortexExcelAddIn.Application.Factories
 
             // Criar conexão com dependências injetadas (DIP)
             return new PostgreSqlConnection(pgConfig, queryBuilder);
+        }
+
+        /// <summary>
+        /// Cria conexão via Vortex API com credenciais InfluxDB inline.
+        /// </summary>
+        private IDataSourceConnection CreateVortexApiConnection(UnifiedDatabaseConfig config)
+        {
+            LoggingService.Info("Criando conexão Vortex API com credenciais inline");
+
+            // Extrair credenciais InfluxDB do config
+            var url = config.ConnectionSettings.Url ?? "http://localhost:8086";
+            var host = ExtractHostFromUrl(url);
+            var port = ExtractPortFromUrl(url, 8086);
+
+            // Descriptografar token
+            var token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                token = _encryptor.Decrypt(token);
+            }
+
+            var apiConfig = new VortexApiConfig
+            {
+                InfluxHost = host,
+                InfluxPort = port,
+                InfluxOrg = config.ConnectionSettings.Org ?? "vortex",
+                InfluxBucket = config.ConnectionSettings.Bucket ?? "vortex_data",
+                InfluxToken = token,
+                Timeout = 30
+            };
+
+            // Criar adapter com credenciais inline
+            return new VortexApiDataSourceAdapter(apiConfig);
+        }
+
+        /// <summary>
+        /// Extrai o host de uma URL (ex: "http://localhost:8086" -> "localhost").
+        /// </summary>
+        private string ExtractHostFromUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return "localhost";
+
+            try
+            {
+                var uri = new Uri(url);
+                return uri.Host;
+            }
+            catch
+            {
+                // Se não for uma URL válida, assume que é só o host
+                return url.Split(':')[0];
+            }
+        }
+
+        /// <summary>
+        /// Extrai a porta de uma URL (ex: "http://localhost:8086" -> 8086).
+        /// </summary>
+        private int ExtractPortFromUrl(string url, int defaultPort)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return defaultPort;
+
+            try
+            {
+                var uri = new Uri(url);
+                return uri.Port > 0 ? uri.Port : defaultPort;
+            }
+            catch
+            {
+                // Se não for uma URL válida, tenta extrair a porta manualmente
+                var parts = url.Split(':');
+                if (parts.Length > 1 && int.TryParse(parts[parts.Length - 1], out int port))
+                {
+                    return port;
+                }
+                return defaultPort;
+            }
         }
     }
 }

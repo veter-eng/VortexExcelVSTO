@@ -67,4 +67,21 @@ namespace VortexExcelAddIn
             throw new NotImplementedException();
         }
     }
+
+    // Bool to Width (for DataGrid columns)
+    public class BoolToWidthConverter : IValueConverter
+    {
+        public double TrueWidth { get; set; } = 100;
+        public double FalseWidth { get; set; } = 0;
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (value is bool b && b) ? TrueWidth : FalseWidth;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

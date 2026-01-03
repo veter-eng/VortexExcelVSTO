@@ -266,6 +266,9 @@
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlConnection.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlQueryBuilder.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlConfig.cs" />
+    <Compile Include="DataAccess\VortexAPI\VortexApiClient.cs" />
+    <Compile Include="DataAccess\VortexAPI\VortexApiConfig.cs" />
+    <Compile Include="DataAccess\VortexAPI\VortexApiDataSourceAdapter.cs" />
     <Compile Include="Services\LoggingService.cs" />
     <Compile Include="Services\InfluxDbService.cs" />
     <Compile Include="Services\ConfigService.cs" />

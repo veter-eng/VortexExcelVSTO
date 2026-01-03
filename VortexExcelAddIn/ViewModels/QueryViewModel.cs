@@ -76,9 +76,33 @@ namespace VortexExcelAddIn.ViewModels
 
         #endregion
 
+        #region Computed Properties
+
+        /// <summary>
+        /// Indica se o tipo de servidor selecionado é VortexIO (API com dados agregados)
+        /// </summary>
+        public bool IsVortexIO => _configViewModel?.SelectedDatabaseType == Domain.Models.DatabaseType.VortexAPI;
+
+        /// <summary>
+        /// Indica se o tipo de servidor selecionado é Vortex Historian (InfluxDB direto com dados brutos)
+        /// </summary>
+        public bool IsVortexHistorian => !IsVortexIO;
+
+        #endregion
+
         public QueryViewModel(ConfigViewModel configViewModel)
         {
             _configViewModel = configViewModel ?? throw new ArgumentNullException(nameof(configViewModel));
+
+            // Subscrever mudanças no ConfigViewModel para atualizar IsVortexIO/IsVortexHistorian
+            _configViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ConfigViewModel.SelectedDatabaseType))
+                {
+                    OnPropertyChanged(nameof(IsVortexIO));
+                    OnPropertyChanged(nameof(IsVortexHistorian));
+                }
+            };
 
             // Inicializar coleções de resultados
             Results = new ObservableCollection<VortexDataPoint>();
@@ -208,7 +232,7 @@ namespace VortexExcelAddIn.ViewModels
             try
             {
                 var dataList = Results.ToList();
-                ExcelService.ExportToSheet(dataList, $"VortexData_{DateTime.Now:yyyyMMdd_HHmmss}");
+                ExcelService.ExportToSheet(dataList, $"VortexData_{DateTime.Now:yyyyMMdd_HHmmss}", _configViewModel.SelectedDatabaseType);
 
                 StatusMessage = $"Dados Exportados para o Excel: {Results.Count:N0} Registros";
                 StatusMessageColor = Brushes.Green;
