@@ -126,7 +126,7 @@
                               Height="200"
                               Visibility="{Binding IsVortexIO, Converter={StaticResource BoolToVisibilityConverter}}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time}" Width="150"/>
+                            <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time, StringFormat='dd/MM/yyyy HH:mm:ss'}" Width="150"/>
                             <DataGridTextColumn Header="Campo" Binding="{Binding GatewayId}" Width="100"/>
                             <DataGridTextColumn Header="Tipo de Agregação" Binding="{Binding EquipmentId}" Width="140"/>
                             <DataGridTextColumn Header="Tag" Binding="{Binding TagId}" Width="100"/>
@@ -141,7 +141,7 @@
                               Height="200"
                               Visibility="{Binding IsVortexHistorian, Converter={StaticResource BoolToVisibilityConverter}}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time}" Width="150"/>
+                            <DataGridTextColumn Header="Data/Hora" Binding="{Binding Time, StringFormat='dd/MM/yyyy HH:mm:ss'}" Width="150"/>
                             <DataGridTextColumn Header="Coletor" Binding="{Binding ColetorId}" Width="100"/>
                             <DataGridTextColumn Header="Gateway" Binding="{Binding GatewayId}" Width="100"/>
                             <DataGridTextColumn Header="Equipamento" Binding="{Binding EquipmentId}" Width="120"/>
