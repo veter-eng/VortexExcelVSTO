@@ -77,12 +77,12 @@ namespace VortexExcelAddIn.Services
                 }
 
                 // Preparar array 2D (mais eficiente que célula por célula)
-                // VortexIO tem 5 colunas (sem Coletor ID), Vortex Historian tem 6 colunas
+                // VortexIO tem 5 colunas (sem Coletor ID), Vortex Historian e Vortex Historian API têm 6 colunas
                 bool isVortexIO = databaseType == Domain.Models.DatabaseType.VortexAPI;
                 int columnCount = isVortexIO ? 5 : 6;
                 object[,] values = new object[data.Count + 1, columnCount];
 
-                // Cabeçalhos - Ajustados para VortexIO (dados_airflow) vs Vortex Historian (dados_rabbitmq)
+                // Cabeçalhos - Ajustados para VortexIO (dados_airflow) vs Vortex Historian/Historian API (dados_rabbitmq)
                 if (isVortexIO)
                 {
                     // VortexIO: Timestamp, Campo, Tipo de Agregação, Tag ID, Valor
@@ -109,7 +109,7 @@ namespace VortexExcelAddIn.Services
                     if (isVortexIO)
                     {
                         // VortexIO: Skip ColetorId (not used)
-                        values[i + 1, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
+                        values[i + 1, 0] = data[i].Time;  // DateTime object (not string)
                         values[i + 1, 1] = data[i].GatewayId;  // Campo (_field)
                         values[i + 1, 2] = data[i].EquipmentId;  // Tipo de Agregação
                         values[i + 1, 3] = data[i].TagId;
@@ -118,7 +118,7 @@ namespace VortexExcelAddIn.Services
                     else
                     {
                         // Vortex Historian: All fields
-                        values[i + 1, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
+                        values[i + 1, 0] = data[i].Time;  // DateTime object (not string)
                         values[i + 1, 1] = data[i].ColetorId;
                         values[i + 1, 2] = data[i].GatewayId;
                         values[i + 1, 3] = data[i].EquipmentId;
@@ -131,6 +131,11 @@ namespace VortexExcelAddIn.Services
                 range = (Excel.Range)sheet.Cells[1, 1];
                 range = range.Resize[data.Count + 1, columnCount];
                 range.Value2 = values;
+
+                // Formatar coluna de timestamp (primeira coluna) com formato brasileiro
+                var timestampColumn = (Excel.Range)sheet.Cells[2, 1];  // Começar na linha 2 (pular cabeçalho)
+                timestampColumn = timestampColumn.Resize[data.Count, 1];
+                timestampColumn.NumberFormat = "dd/mm/yyyy hh:mm:ss";
 
                 // Formatar cabeçalhos
                 headerRange = (Range)sheet.Cells[1, 1];
@@ -214,7 +219,7 @@ namespace VortexExcelAddIn.Services
                 object[,] values = new object[data.Count, 6];
                 for (int i = 0; i < data.Count; i++)
                 {
-                    values[i, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
+                    values[i, 0] = data[i].Time;  // DateTime object (not string)
                     values[i, 1] = data[i].ColetorId;
                     values[i, 2] = data[i].GatewayId;
                     values[i, 3] = data[i].EquipmentId;
@@ -226,6 +231,11 @@ namespace VortexExcelAddIn.Services
                 dataRange = table.ListRows.Add().Range;
                 dataRange = dataRange.Resize[data.Count, 6];
                 dataRange.Value2 = values;
+
+                // Formatar coluna de timestamp com formato brasileiro
+                var timestampColumn = (Excel.Range)dataRange.Cells[1, 1];
+                timestampColumn = timestampColumn.Resize[data.Count, 1];
+                timestampColumn.NumberFormat = "dd/mm/yyyy hh:mm:ss";
 
                 LoggingService.Info($"Tabela '{tableName}' atualizada: {data.Count} registros");
             }
@@ -267,7 +277,7 @@ namespace VortexExcelAddIn.Services
 
                 for (int i = 0; i < data.Count; i++)
                 {
-                    values[i + 1, 0] = data[i].Time.ToString("yyyy-MM-dd HH:mm:ss");
+                    values[i + 1, 0] = data[i].Time;  // DateTime object (not string)
 
                     // Tentar converter valor para número
                     if (double.TryParse(data[i].Valor, out double valor))
