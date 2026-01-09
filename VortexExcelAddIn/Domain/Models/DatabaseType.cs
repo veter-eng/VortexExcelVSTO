@@ -6,11 +6,6 @@ namespace VortexExcelAddIn.Domain.Models
     public enum DatabaseType
     {
         /// <summary>
-        /// InfluxDB - Banco de dados de séries temporais
-        /// </summary>
-        InfluxDB,
-
-        /// <summary>
         /// PostgreSQL - Banco de dados relacional open source
         /// </summary>
         PostgreSQL,
@@ -33,7 +28,12 @@ namespace VortexExcelAddIn.Domain.Models
         /// <summary>
         /// Vortex API - Acesso via API do Vortex IO (independente de banco)
         /// </summary>
-        VortexAPI
+        VortexAPI,
+
+        /// <summary>
+        /// Vortex Historian API - Acesso via API aos dados raw do Historian (dados_rabbitmq)
+        /// </summary>
+        VortexHistorianAPI
     }
 
     /// <summary>
@@ -51,12 +51,12 @@ namespace VortexExcelAddIn.Domain.Models
         {
             return type switch
             {
-                DatabaseType.InfluxDB => "Servidor Vortex Historian",
                 DatabaseType.PostgreSQL => "PostgreSQL",
                 DatabaseType.MySQL => "MySQL",
                 DatabaseType.Oracle => "Oracle Database",
                 DatabaseType.SqlServer => "SQL Server",
                 DatabaseType.VortexAPI => "Servidor VortexIO",
+                DatabaseType.VortexHistorianAPI => "Servidor Vortex Historian (API)",
                 _ => type.ToString()
             };
         }
@@ -68,17 +68,7 @@ namespace VortexExcelAddIn.Domain.Models
         /// <returns>True se for banco relacional, False caso contrário</returns>
         public static bool IsRelational(this DatabaseType type)
         {
-            return type != DatabaseType.InfluxDB && type != DatabaseType.VortexAPI;
-        }
-
-        /// <summary>
-        /// Verifica se o tipo de banco é de séries temporais (Time Series).
-        /// </summary>
-        /// <param name="type">Tipo de banco de dados</param>
-        /// <returns>True se for banco de séries temporais, False caso contrário</returns>
-        public static bool IsTimeSeries(this DatabaseType type)
-        {
-            return type == DatabaseType.InfluxDB;
+            return type != DatabaseType.VortexAPI && type != DatabaseType.VortexHistorianAPI;
         }
 
         /// <summary>
@@ -88,7 +78,7 @@ namespace VortexExcelAddIn.Domain.Models
         /// <returns>True se for API, False caso contrário</returns>
         public static bool IsApi(this DatabaseType type)
         {
-            return type == DatabaseType.VortexAPI;
+            return type == DatabaseType.VortexAPI || type == DatabaseType.VortexHistorianAPI;
         }
 
         /// <summary>
@@ -100,12 +90,12 @@ namespace VortexExcelAddIn.Domain.Models
         {
             return type switch
             {
-                DatabaseType.InfluxDB => 8086,
                 DatabaseType.PostgreSQL => 5432,
                 DatabaseType.MySQL => 3306,
                 DatabaseType.Oracle => 1521,
                 DatabaseType.SqlServer => 1433,
                 DatabaseType.VortexAPI => 8000,
+                DatabaseType.VortexHistorianAPI => 8000,
                 _ => 0
             };
         }
