@@ -111,6 +111,7 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                         Bucket = _config.InfluxBucket,
                         Token = _config.InfluxToken
                     },
+                    Measurement = "dados_airflow", // VortexIO usa dados processados do Airflow
                     ColetorIds = ParseCsvToList(parameters.ColetorId),
                     GatewayIds = ParseCsvToList(parameters.GatewayId),
                     EquipmentIds = ParseCsvToList(parameters.EquipmentId),
@@ -120,8 +121,8 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                     Limit = parameters.Limit ?? 1000
                 };
 
-                LoggingService.Debug(
-                    $"Querying API with inline credentials - Coletor: {parameters.ColetorId}, " +
+                LoggingService.Info(
+                    $"[VORTEXIO DEBUG] Querying VortexIO API with measurement=dados_airflow - Coletor: {parameters.ColetorId}, " +
                     $"Gateway: {parameters.GatewayId}, Equipment: {parameters.EquipmentId}, " +
                     $"Tag: {parameters.TagId}, Time range: {parameters.StartTime:yyyy-MM-dd HH:mm} to {parameters.EndTime:yyyy-MM-dd HH:mm}");
 
