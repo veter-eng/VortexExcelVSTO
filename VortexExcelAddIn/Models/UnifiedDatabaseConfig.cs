@@ -33,7 +33,7 @@ namespace VortexExcelAddIn.Models
 
         public UnifiedDatabaseConfig()
         {
-            DatabaseType = DatabaseType.InfluxDB; // padrão para backward compatibility
+            DatabaseType = DatabaseType.VortexHistorianAPI; // padrão
             ConnectionSettings = new DatabaseConnectionSettings();
             TableSchema = new TableSchema();
             ConfigVersion = 2;
@@ -51,13 +51,8 @@ namespace VortexExcelAddIn.Models
             // Validações específicas por tipo de banco
             switch (DatabaseType)
             {
-                case DatabaseType.InfluxDB:
-                    return !string.IsNullOrEmpty(ConnectionSettings.Url) &&
-                           !string.IsNullOrEmpty(ConnectionSettings.EncryptedToken) &&
-                           !string.IsNullOrEmpty(ConnectionSettings.Org) &&
-                           !string.IsNullOrEmpty(ConnectionSettings.Bucket);
-
                 case DatabaseType.VortexAPI:
+                case DatabaseType.VortexHistorianAPI:
                     return !string.IsNullOrEmpty(ConnectionSettings.EncryptedToken);
 
                 case DatabaseType.PostgreSQL:
