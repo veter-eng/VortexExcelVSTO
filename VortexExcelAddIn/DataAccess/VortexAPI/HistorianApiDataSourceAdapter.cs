@@ -10,27 +10,28 @@ using VortexExcelAddIn.Services;
 namespace VortexExcelAddIn.DataAccess.VortexAPI
 {
     /// <summary>
-    /// Adapter para integração da API Vortex IO com a interface IDataSourceConnection.
+    /// Adapter para integração da API Vortex Historian com a interface IDataSourceConnection.
     /// Implementa o padrão Adapter (GoF Design Pattern).
     /// Segue o princípio DIP (Dependency Inversion Principle) do SOLID.
     /// Usa credenciais inline (enviadas diretamente na requisição) ao invés de ID de conexão gerenciado.
+    /// Acessa dados raw da tabela dados_rabbitmq através da API.
     /// </summary>
-    public class VortexApiDataSourceAdapter : IDataSourceConnection
+    public class HistorianApiDataSourceAdapter : IDataSourceConnection
     {
-        private readonly VortexApiConfig _config;
+        private readonly HistorianApiConfig _config;
         private readonly VortexApiClient _apiClient;
         private bool _disposed = false;
 
         /// <summary>
-        /// Tipo de banco de dados desta conexão (sempre VortexAPI).
+        /// Tipo de banco de dados desta conexão (sempre VortexHistorianAPI).
         /// </summary>
-        public DatabaseType DatabaseType => DatabaseType.VortexAPI;
+        public DatabaseType DatabaseType => DatabaseType.VortexHistorianAPI;
 
         /// <summary>
         /// Inicializa uma nova instância do adapter.
         /// </summary>
         /// <param name="config">Configuração da API com credenciais InfluxDB inline</param>
-        public VortexApiDataSourceAdapter(VortexApiConfig config)
+        public HistorianApiDataSourceAdapter(HistorianApiConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -41,7 +42,7 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
 
             _apiClient = new VortexApiClient(_config.ApiUrl, _config.Timeout);
 
-            LoggingService.Info($"VortexApiDataSourceAdapter initialized with inline credentials for {_config.InfluxHost}:{_config.InfluxPort}");
+            LoggingService.Info($"HistorianApiDataSourceAdapter initialized with inline credentials for {_config.InfluxHost}:{_config.InfluxPort}");
         }
 
         /// <summary>
@@ -59,7 +60,7 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                     return new ConnectionResult
                     {
                         IsSuccessful = true,
-                        Message = $"Conectado ao Servidor VortexIO - InfluxDB: {_config.InfluxHost}:{_config.InfluxPort}",
+                        Message = $"Conectado ao Servidor Vortex Historian (API) - InfluxDB: {_config.InfluxHost}:{_config.InfluxPort}",
                         Latency = latency,
                         Metadata = new Dictionary<string, object>
                         {
@@ -67,7 +68,8 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                             { "influx_host", _config.InfluxHost },
                             { "influx_port", _config.InfluxPort },
                             { "influx_org", _config.InfluxOrg },
-                            { "influx_bucket", _config.InfluxBucket }
+                            { "influx_bucket", _config.InfluxBucket },
+                            { "measurement", "dados_rabbitmq" }
                         }
                     };
                 }
@@ -78,13 +80,14 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
             }
             catch (Exception ex)
             {
-                LoggingService.Error($"API connection test failed: {ex.Message}", ex);
-                return ConnectionResult.Failure($"Failed to connect to API: {ex.Message}", ex);
+                LoggingService.Error($"Historian API connection test failed: {ex.Message}", ex);
+                return ConnectionResult.Failure($"Failed to connect to Historian API: {ex.Message}", ex);
             }
         }
 
         /// <summary>
         /// Executa consulta de dados através da API usando credenciais inline.
+        /// Acessa especificamente a tabela dados_rabbitmq.
         /// </summary>
         /// <param name="parameters">Parâmetros de consulta</param>
         /// <returns>Lista de pontos de dados</returns>
@@ -111,7 +114,7 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                         Bucket = _config.InfluxBucket,
                         Token = _config.InfluxToken
                     },
-                    Measurement = "dados_airflow", // VortexIO usa dados processados do Airflow
+                    Measurement = "dados_rabbitmq", // Historian acessa dados raw do RabbitMQ
                     ColetorIds = ParseCsvToList(parameters.ColetorId),
                     GatewayIds = ParseCsvToList(parameters.GatewayId),
                     EquipmentIds = ParseCsvToList(parameters.EquipmentId),
@@ -122,26 +125,26 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                 };
 
                 LoggingService.Info(
-                    $"[VORTEXIO DEBUG] Querying VortexIO API with measurement=dados_airflow - Coletor: {parameters.ColetorId}, " +
+                    $"[HISTORIAN DEBUG] Querying Historian API with measurement=dados_rabbitmq - Coletor: {parameters.ColetorId}, " +
                     $"Gateway: {parameters.GatewayId}, Equipment: {parameters.EquipmentId}, " +
                     $"Tag: {parameters.TagId}, Time range: {parameters.StartTime:yyyy-MM-dd HH:mm} to {parameters.EndTime:yyyy-MM-dd HH:mm}");
 
                 var dataPoints = await _apiClient.QueryDataAsync(request);
 
-                LoggingService.Info($"Query completed: {dataPoints.Count} records returned from VortexIO API");
+                LoggingService.Info($"Query completed: {dataPoints.Count} records returned from Historian API (dados_rabbitmq)");
 
                 return dataPoints;
             }
             catch (InvalidOperationException ex)
             {
                 // Re-throw API-specific errors
-                LoggingService.Error($"VortexIO API query failed: {ex.Message}", ex);
+                LoggingService.Error($"Historian API query failed: {ex.Message}", ex);
                 throw;
             }
             catch (Exception ex)
             {
-                LoggingService.Error($"Unexpected error during VortexIO API query: {ex.Message}", ex);
-                throw new InvalidOperationException($"Failed to query data from VortexIO API: {ex.Message}", ex);
+                LoggingService.Error($"Unexpected error during Historian API query: {ex.Message}", ex);
+                throw new InvalidOperationException($"Failed to query data from Historian API: {ex.Message}", ex);
             }
         }
 
@@ -153,12 +156,12 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
         {
             return new ConnectionInfo
             {
-                DatabaseType = DatabaseType.VortexAPI,
+                DatabaseType = DatabaseType.VortexHistorianAPI,
                 Host = $"{_config.ApiUrl} -> {_config.InfluxHost}:{_config.InfluxPort}",
-                DatabaseName = $"{_config.InfluxOrg}/{_config.InfluxBucket}",
-                Username = "VortexIO API",
+                DatabaseName = $"{_config.InfluxOrg}/{_config.InfluxBucket} (dados_rabbitmq)",
+                Username = "Vortex Historian API",
                 IsSecure = _config.ApiUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase),
-                ServerVersion = "Vortex IO API v2.0 (Inline Credentials)"
+                ServerVersion = "Vortex Historian API v2.0 (Inline Credentials)"
             };
         }
 
@@ -194,7 +197,7 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                 if (disposing)
                 {
                     _apiClient?.Dispose();
-                    LoggingService.Debug("VortexApiDataSourceAdapter disposed");
+                    LoggingService.Debug("HistorianApiDataSourceAdapter disposed");
                 }
 
                 _disposed = true;

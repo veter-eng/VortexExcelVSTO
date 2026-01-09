@@ -1,15 +1,123 @@
 # Vortex Excel Add-In
 
-Plugin VSTO para Microsoft Excel que permite consultar e importar dados do InfluxDB diretamente no Excel.
+Plugin VSTO para Microsoft Excel que permite consultar e importar dados de múltiplas fontes de dados diretamente no Excel, com suporte especializado para dados de séries temporais do ecossistema Vortex.
 
 ## Características
 
-- 📊 Consulta de dados do InfluxDB com interface intuitiva
+- 🗄️ **Suporte Multi-Database**: InfluxDB, PostgreSQL, MySQL, Oracle, SQL Server
+- 🌐 **Acesso via API**: Suporte para Vortex IO API e Vortex Historian API
+- 📊 Consulta de dados com interface intuitiva
 - 🔄 Importação automática de dados para planilhas Excel
 - 🎯 Filtros em cascata (Coletor → Gateway → Equipamento → Tag)
 - 📅 Seleção de período com data/hora de início e fim
 - 💾 Exportação de dados para CSV
 - 🎨 Interface WPF moderna integrada ao Excel
+- 🔐 Credenciais criptografadas com DPAPI
+- 🔄 Auto-refresh configurável para atualização automática de dados
+
+## Tipos de Servidores Vortex
+
+O add-in suporta duas formas de acessar dados do ecossistema Vortex, ambas via API REST:
+
+### 📊 Tabela Comparativa
+
+| Tipo de Servidor | Método de Acesso | Measurement/Tabela | Tipo de Dados | Colunas Excel |
+|-----------------|------------------|-------------------|---------------|---------------|
+| **Servidor Vortex Historian (API)** | API REST (localhost:8000) | `dados_rabbitmq` | Raw/Real-time | 6 |
+| **Servidor VortexIO** | API REST (localhost:8000) | `dados_airflow` | Agregado/Processado | 5 |
+
+### 1️⃣ Servidor Vortex Historian (API)
+
+**Quando usar**: Para acessar dados brutos (raw) em tempo real do sistema de coleta.
+
+- ✅ Acesso via API REST em `http://localhost:8000`
+- ✅ API faz a ponte com InfluxDB
+- ✅ Acessa measurement `dados_rabbitmq`
+- ✅ Dados em tempo real, não processados
+- ✅ **6 colunas**: Timestamp, Coletor ID, Gateway ID, Equipment ID, Tag ID, Valor
+
+**Configuração necessária**:
+- Token de autenticação InfluxDB (enviado inline na requisição)
+- A API em `localhost:8000` deve estar rodando
+
+**Formato de dados retornado**:
+```
+Timestamp             | Coletor ID | Gateway ID | Equipment ID | Tag ID | Valor
+2024-12-01 10:00:00  | COL001     | GW001      | EQ001        | TAG001 | 123.45
+```
+
+### 2️⃣ Servidor VortexIO
+
+**Quando usar**: Para acessar dados já processados e agregados pelo pipeline Airflow.
+
+- ✅ Acesso via API REST em `http://localhost:8000`
+- ✅ Acessa measurement `dados_airflow`
+- ✅ Dados agregados/processados (médias, somas, etc.)
+- ✅ **5 colunas**: Timestamp, Campo, Tipo de Agregação, Tag ID, Valor
+- ⚠️ Não inclui Coletor ID (usa Gateway/Equipment como indicadores de agregação)
+
+**Configuração necessária**:
+- Token de autenticação InfluxDB (enviado inline na requisição)
+- A API em `localhost:8000` deve estar rodando
+
+**Formato de dados retornado**:
+```
+Timestamp             | Campo      | Tipo de Agregação | Tag ID | Valor
+2024-12-01 10:00:00  | avg_valor  | average_60m       | TAG001 | 120.50
+```
+
+### 🔄 Diferença Principal
+
+A principal diferença entre os dois servidores é o **tipo de dado** e o **número de colunas**:
+
+- **Historian API**: Dados brutos com 6 colunas (inclui Coletor ID)
+- **VortexIO**: Dados agregados com 5 colunas (sem Coletor ID, com informações de agregação)
+
+## Requisitos da API Backend (VortexIO e Historian API)
+
+Se você planeja usar **Servidor VortexIO** ou **Servidor Vortex Historian (API)**, a API backend deve suportar o parâmetro `measurement` no endpoint `/api/query`:
+
+```python
+# Exemplo de implementação no backend (FastAPI/Python)
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class QueryRequest(BaseModel):
+    measurement: str  # "dados_airflow" ou "dados_rabbitmq"
+    inline_credentials: dict
+    coletor_ids: list[str] = None
+    gateway_ids: list[str] = None
+    equipment_ids: list[str] = None
+    tag_ids: list[str] = None
+    start_time: str
+    end_time: str
+    limit: int = 1000
+
+@app.post("/api/query")
+async def query_data(request: QueryRequest):
+    # Usar o measurement para determinar qual tabela consultar
+    measurement = request.measurement or "dados_airflow"
+
+    # Construir query Flux para InfluxDB
+    flux_query = f'''
+    from(bucket: "{request.inline_credentials['bucket']}")
+        |> range(start: {request.start_time}, stop: {request.end_time})
+        |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+        // ... resto dos filtros
+    '''
+
+    # Executar query e retornar dados
+    return {"data": results, "total_count": len(results)}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+```
+
+**Endpoint necessário**: `POST http://localhost:8000/api/query`
+**Health check**: `GET http://localhost:8000/health`
 
 ## Pré-requisitos
 
@@ -113,15 +221,23 @@ Após a instalação, verifique se o plugin está ativo:
    - Clique no botão **"Vortex Plugin"**
    - O painel lateral "Vortex Data Plugin" será exibido à direita
 
-2. **Configure a conexão com InfluxDB:**
+2. **Configure a conexão:**
    - Clique na aba **"Configuração"**
-   - Preencha os dados de conexão:
-     - **URL do InfluxDB**: `http://seu-servidor:8086`
-     - **Token de Acesso**: Seu token de autenticação
-     - **Organização**: Nome da sua organização
-     - **Bucket**: Nome do bucket padrão
-   - Clique em **"Testar Conexão"** para validar
-   - Clique em **"Salvar"**
+   - **Selecione o tipo de servidor** no dropdown:
+     - 🔹 **Servidor Vortex Historian (API)** - Para dados brutos/raw
+     - 🔸 **Servidor VortexIO** - Para dados agregados/processados
+     - 💾 **Servidor Vortex Historian** - Conexão direta InfluxDB (legacy)
+     - 🗄️ **PostgreSQL, MySQL, Oracle, SQL Server** - Outros bancos
+
+3. **Preencha as credenciais** (para Vortex Historian API ou VortexIO):
+   - **Token de Acesso**: Seu token de autenticação InfluxDB
+   - ⚠️ A API deve estar rodando em `http://localhost:8000`
+   - O token será enviado inline para a API
+
+4. **Teste e salve:**
+   - Clique em **"Conectar"** para validar a conexão
+   - O botão mudará para **"Conectado!"** (verde) se bem-sucedido
+   - A configuração é salva automaticamente na planilha do Excel
 
 ### Consultando Dados
 

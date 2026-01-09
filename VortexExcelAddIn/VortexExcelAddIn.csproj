@@ -238,7 +238,6 @@
     <Compile Include="ThisAddIn.Designer.cs">
       <DependentUpon>ThisAddIn.Designer.xml</DependentUpon>
     </Compile>
-    <Compile Include="Models\InfluxDBConfig.cs" />
     <Compile Include="Models\VortexDataPoint.cs" />
     <Compile Include="Models\QueryParams.cs" />
     <Compile Include="Models\UnifiedDatabaseConfig.cs" />
@@ -259,18 +258,15 @@
     <Compile Include="Domain\Models\AggregationType.cs" />
     <Compile Include="Application\Factories\DatabaseConnectionFactory.cs" />
     <Compile Include="Application\Security\DPAPICredentialEncryptor.cs" />
-    <Compile Include="DataAccess\InfluxDB\InfluxDBConnection.cs" />
-    <Compile Include="DataAccess\InfluxDB\InfluxDBQueryBuilder.cs" />
-    <Compile Include="DataAccess\InfluxDB\InfluxDBResponseParser.cs" />
-    <Compile Include="DataAccess\InfluxDB\InfluxDBConfig.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlConnection.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlQueryBuilder.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlConfig.cs" />
     <Compile Include="DataAccess\VortexAPI\VortexApiClient.cs" />
     <Compile Include="DataAccess\VortexAPI\VortexApiConfig.cs" />
     <Compile Include="DataAccess\VortexAPI\VortexApiDataSourceAdapter.cs" />
+    <Compile Include="DataAccess\VortexAPI\HistorianApiConfig.cs" />
+    <Compile Include="DataAccess\VortexAPI\HistorianApiDataSourceAdapter.cs" />
     <Compile Include="Services\LoggingService.cs" />
-    <Compile Include="Services\InfluxDbService.cs" />
     <Compile Include="Services\ConfigService.cs" />
     <Compile Include="Services\ExcelService.cs" />
     <Compile Include="Services\SystemTimerService.cs" />

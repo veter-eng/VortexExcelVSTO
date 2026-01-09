@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using VortexExcelAddIn.Application.Security;
-using VortexExcelAddIn.DataAccess.InfluxDB;
 using VortexExcelAddIn.DataAccess.PostgreSQL;
 using VortexExcelAddIn.DataAccess.VortexAPI;
 using VortexExcelAddIn.Domain.Interfaces;
@@ -28,7 +27,7 @@ namespace VortexExcelAddIn.Application.Factories
             _factories = new Dictionary<DatabaseType, Func<UnifiedDatabaseConfig, IDataSourceConnection>>
             {
                 { DatabaseType.VortexAPI, CreateVortexApiConnection },
-                { DatabaseType.InfluxDB, CreateInfluxDbConnection },
+                { DatabaseType.VortexHistorianAPI, CreateHistorianApiConnection },
                 { DatabaseType.PostgreSQL, CreatePostgreSqlConnection }
                 // MySQL, Oracle e SQL Server serão adicionados nas próximas fases
                 // { DatabaseType.MySQL, CreateMySqlConnection },
@@ -65,8 +64,10 @@ namespace VortexExcelAddIn.Application.Factories
                     $"Tipos suportados: {supportedTypes}");
             }
 
-            LoggingService.Info($"Criando conexão para banco: {config.DatabaseType}");
-            return factory(config);
+            LoggingService.Info($"[FACTORY DEBUG] Criando conexão para banco: {config.DatabaseType}, Bucket: {config.ConnectionSettings?.Bucket}");
+            var connection = factory(config);
+            LoggingService.Info($"[FACTORY DEBUG] Conexão criada: Tipo={connection.DatabaseType}");
+            return connection;
         }
 
         /// <summary>
@@ -90,11 +91,11 @@ namespace VortexExcelAddIn.Application.Factories
                         }
                     };
 
-                case DatabaseType.InfluxDB:
-                    LoggingService.Debug("Criando configuração padrão para InfluxDB");
+                case DatabaseType.VortexHistorianAPI:
+                    LoggingService.Debug("Criando configuração padrão para Vortex Historian API (acessa dados_rabbitmq)");
                     return new UnifiedDatabaseConfig
                     {
-                        DatabaseType = DatabaseType.InfluxDB,
+                        DatabaseType = DatabaseType.VortexHistorianAPI,
                         ConnectionSettings = new DatabaseConnectionSettings
                         {
                             Url = "http://localhost:8086",
@@ -202,32 +203,6 @@ namespace VortexExcelAddIn.Application.Factories
         }
 
         /// <summary>
-        /// Cria conexão InfluxDB.
-        /// </summary>
-        private IDataSourceConnection CreateInfluxDbConnection(UnifiedDatabaseConfig config)
-        {
-            LoggingService.Info("Criando conexão InfluxDB");
-
-            // Descriptografar token
-            var token = _encryptor.Decrypt(config.ConnectionSettings.EncryptedToken);
-
-            var influxConfig = new DataAccess.InfluxDB.InfluxDBConfig
-            {
-                Url = config.ConnectionSettings.Url,
-                Token = token,
-                Org = config.ConnectionSettings.Org,
-                Bucket = config.ConnectionSettings.Bucket
-            };
-
-            // Criar componentes (SRP - cada um com sua responsabilidade)
-            var queryBuilder = new InfluxDBQueryBuilder(influxConfig);
-            var responseParser = new InfluxDBResponseParser();
-
-            // Criar conexão com dependências injetadas (DIP)
-            return new InfluxDBConnection(influxConfig, queryBuilder, responseParser);
-        }
-
-        /// <summary>
         /// Cria conexão PostgreSQL.
         /// </summary>
         private IDataSourceConnection CreatePostgreSqlConnection(UnifiedDatabaseConfig config)
@@ -286,6 +261,40 @@ namespace VortexExcelAddIn.Application.Factories
 
             // Criar adapter com credenciais inline
             return new VortexApiDataSourceAdapter(apiConfig);
+        }
+
+        /// <summary>
+        /// Cria conexão via Vortex Historian API com credenciais InfluxDB inline.
+        /// Acessa dados raw da tabela dados_rabbitmq.
+        /// </summary>
+        private IDataSourceConnection CreateHistorianApiConnection(UnifiedDatabaseConfig config)
+        {
+            LoggingService.Info("Criando conexão Vortex Historian API com credenciais inline");
+
+            // Extrair credenciais InfluxDB do config
+            var url = config.ConnectionSettings.Url ?? "http://localhost:8086";
+            var host = ExtractHostFromUrl(url);
+            var port = ExtractPortFromUrl(url, 8086);
+
+            // Descriptografar token
+            var token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                token = _encryptor.Decrypt(token);
+            }
+
+            var apiConfig = new HistorianApiConfig
+            {
+                InfluxHost = host,
+                InfluxPort = port,
+                InfluxOrg = config.ConnectionSettings.Org ?? "vortex",
+                InfluxBucket = config.ConnectionSettings.Bucket ?? "vortex_data", // Fixed: era "vortex", agora "vortex_data" para consistência
+                InfluxToken = token,
+                Timeout = 30
+            };
+
+            // Criar adapter com credenciais inline
+            return new HistorianApiDataSourceAdapter(apiConfig);
         }
 
         /// <summary>

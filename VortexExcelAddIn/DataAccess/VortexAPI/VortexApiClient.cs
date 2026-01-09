@@ -248,6 +248,9 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
         [JsonProperty("inline_credentials")]
         public InfluxDBInlineCredentialsDto InlineCredentials { get; set; }
 
+        [JsonProperty("measurement")]
+        public string Measurement { get; set; }
+
         [JsonProperty("coletor_ids")]
         public List<string> ColetorIds { get; set; }
 
