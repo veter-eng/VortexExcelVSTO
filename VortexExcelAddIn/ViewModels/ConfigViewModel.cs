@@ -21,9 +21,6 @@ namespace VortexExcelAddIn.ViewModels
         private readonly IDatabaseConnectionFactory _connectionFactory;
         private IDataSourceConnection _dataSourceConnection;
 
-        // Mantido para backward compatibility temporária
-        private InfluxDbService _influxDbService;
-
         /// <summary>
         /// Evento disparado quando a conexão é salva e testada com sucesso
         /// </summary>
@@ -134,7 +131,7 @@ namespace VortexExcelAddIn.ViewModels
         {
             AvailableDatabaseTypes = new ObservableCollection<DatabaseTypeItem>
             {
-                new DatabaseTypeItem { Type = DatabaseType.InfluxDB, DisplayName = "Servidor Vortex Historian" },
+                new DatabaseTypeItem { Type = DatabaseType.VortexHistorianAPI, DisplayName = "Servidor Vortex Historian" },
                 new DatabaseTypeItem { Type = DatabaseType.VortexAPI, DisplayName = "Servidor VortexIO" }
             };
         }
@@ -175,7 +172,7 @@ namespace VortexExcelAddIn.ViewModels
             {
                 Token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
             }
-            else if (config.DatabaseType == DatabaseType.InfluxDB)
+            else if (config.DatabaseType == DatabaseType.VortexHistorianAPI)
             {
                 Token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
             }
@@ -214,17 +211,17 @@ namespace VortexExcelAddIn.ViewModels
                     Url = "http://localhost:8086",
                     EncryptedToken = Token?.Trim() ?? string.Empty,
                     Org = "vortex",
-                    Bucket = "dados_airflow"
+                    Bucket = "vortex_data" // Bucket correto - o measurement é que diferencia
                 };
             }
-            else if (SelectedDatabaseType == DatabaseType.InfluxDB)
+            else if (SelectedDatabaseType == DatabaseType.VortexHistorianAPI)
             {
                 config.ConnectionSettings = new DatabaseConnectionSettings
                 {
                     Url = "http://localhost:8086",
                     EncryptedToken = Token?.Trim() ?? string.Empty,
                     Org = "vortex",
-                    Bucket = "vortex_data"
+                    Bucket = "vortex_data" // Mesmo bucket - o measurement é que diferencia
                 };
             }
             else
@@ -255,8 +252,7 @@ namespace VortexExcelAddIn.ViewModels
         private void UpdateFieldsVisibility()
         {
             IsRelationalDatabase = SelectedDatabaseType.IsRelational();
-            IsInfluxDbConnection = SelectedDatabaseType == DatabaseType.InfluxDB;
-            IsVortexApiConnection = SelectedDatabaseType == DatabaseType.VortexAPI;
+            IsVortexApiConnection = SelectedDatabaseType == DatabaseType.VortexAPI || SelectedDatabaseType == DatabaseType.VortexHistorianAPI;
         }
 
         /// <summary>
@@ -281,6 +277,12 @@ namespace VortexExcelAddIn.ViewModels
             // Limpar conexão anterior
             _dataSourceConnection?.Dispose();
             _dataSourceConnection = null;
+
+            // Resetar estado de conexão
+            IsConnected = false;
+            TestConnectionButtonText = "Conectar";
+            TestConnectionButtonBackground = Brushes.DodgerBlue;
+            TestConnectionButtonForeground = Brushes.White;
 
             // Definir valores padrão para o novo banco
             SetDefaultConfigForDatabaseType(value);
@@ -328,6 +330,12 @@ namespace VortexExcelAddIn.ViewModels
                     return;
                 }
 
+                // CRÍTICO: Limpar conexão em cache ANTES de salvar nova configuração
+                // Isso garante que GetConnection() sempre criará uma nova conexão com o tipo correto
+                _dataSourceConnection?.Dispose();
+                _dataSourceConnection = null;
+                LoggingService.Info($"[SAVE DEBUG] Conexão em cache limpa. Salvando nova configuração: {config.DatabaseType}");
+
                 // Salvar no workbook (com criptografia automática)
                 ConfigService.SaveConfigV2(config);
 
@@ -362,14 +370,7 @@ namespace VortexExcelAddIn.ViewModels
         /// </summary>
         private string GetValidationErrorMessage(UnifiedDatabaseConfig config)
         {
-            if (config.DatabaseType == DatabaseType.VortexAPI)
-            {
-                if (string.IsNullOrWhiteSpace(config.ConnectionSettings.EncryptedToken))
-                    return "Token é obrigatório";
-                return null;
-            }
-
-            if (config.DatabaseType == DatabaseType.InfluxDB)
+            if (config.DatabaseType == DatabaseType.VortexAPI || config.DatabaseType == DatabaseType.VortexHistorianAPI)
             {
                 if (string.IsNullOrWhiteSpace(config.ConnectionSettings.EncryptedToken))
                     return "Token é obrigatório";
@@ -481,34 +482,6 @@ namespace VortexExcelAddIn.ViewModels
         }
 
         /// <summary>
-        /// Obtém o serviço InfluxDB configurado
-        /// </summary>
-        public InfluxDbService GetInfluxDbService()
-        {
-            if (_influxDbService == null)
-            {
-                // Verificar se há configuração válida
-                if (string.IsNullOrWhiteSpace(Token))
-                {
-                    LoggingService.Warn("Tentativa de criar serviço InfluxDB sem configuração completa");
-                    return null;
-                }
-
-                var config = new InfluxDBConfig
-                {
-                    Url = "http://localhost:8086",
-                    Token = Token,
-                    Org = "vortex",
-                    Bucket = "vortex_data"
-                };
-                _influxDbService = new InfluxDbService(config);
-                LoggingService.Info("Serviço InfluxDB criado com valores fixos");
-            }
-
-            return _influxDbService;
-        }
-
-        /// <summary>
         /// Obtém a conexão de banco de dados configurada (nova arquitetura SOLID).
         /// </summary>
         public IDataSourceConnection GetConnection()
@@ -525,6 +498,7 @@ namespace VortexExcelAddIn.ViewModels
                         return null;
                     }
 
+                    LoggingService.Info($"[CONFIG DEBUG] Criando nova conexão com DatabaseType: {config.DatabaseType} (SelectedDatabaseType no ViewModel: {SelectedDatabaseType})");
                     _dataSourceConnection = _connectionFactory.CreateConnection(config);
                     LoggingService.Info($"Conexão criada automaticamente: {config.DatabaseType}");
                 }
@@ -533,6 +507,10 @@ namespace VortexExcelAddIn.ViewModels
                     LoggingService.Error("Erro ao criar conexão de banco de dados", ex);
                     return null;
                 }
+            }
+            else
+            {
+                LoggingService.Debug($"[CONFIG DEBUG] Reutilizando conexão existente: {_dataSourceConnection.DatabaseType}");
             }
 
             return _dataSourceConnection;
@@ -544,7 +522,6 @@ namespace VortexExcelAddIn.ViewModels
         public void Dispose()
         {
             _dataSourceConnection?.Dispose();
-            _influxDbService?.Dispose();
         }
     }
 
