@@ -84,7 +84,7 @@ namespace VortexExcelAddIn.ViewModels
         public bool IsVortexIO => _configViewModel?.SelectedDatabaseType == Domain.Models.DatabaseType.VortexAPI;
 
         /// <summary>
-        /// Indica se o tipo de servidor selecionado é Vortex Historian (InfluxDB direto com dados brutos)
+        /// Indica se o tipo de servidor selecionado é Vortex Historian (API com dados brutos)
         /// </summary>
         public bool IsVortexHistorian => !IsVortexIO;
 
@@ -153,6 +153,10 @@ namespace VortexExcelAddIn.ViewModels
                     return;
                 }
 
+                // Log para debug: qual tipo de banco está sendo usado
+                var connInfo = connection.GetConnectionInfo();
+                LoggingService.Info($"[QUERY DEBUG] Executando query com DatabaseType: {connInfo.DatabaseType}, Connection: {connInfo.DatabaseName}");
+
                 // Criar parâmetros de consulta
                 var queryParams = new QueryParams
                 {
@@ -168,23 +172,10 @@ namespace VortexExcelAddIn.ViewModels
                 // Executar query usando interface (funciona com qualquer banco)
                 var data = await connection.QueryDataAsync(queryParams);
 
-                // Capturar informações de debug (compatibilidade com InfluxDB)
+                // Capturar informações de debug
                 var connectionInfo = connection.GetConnectionInfo();
                 LastQueryExecuted = $"Tipo: {connectionInfo.DatabaseType}, Banco: {connectionInfo.DatabaseName}";
-
-                // Se for InfluxDBConnection, capturar detalhes específicos
-                if (connection is DataAccess.InfluxDB.InfluxDBConnection influxConnection)
-                {
-                    LastQueryExecuted = influxConnection.LastQueryExecuted;
-                    var responsePreview = influxConnection.LastRawResponse?.Length > 2000
-                        ? influxConnection.LastRawResponse.Substring(0, 2000) + "..."
-                        : influxConnection.LastRawResponse ?? "null";
-                    DebugInfo = $"Query executada:\n{influxConnection.LastQueryExecuted}\n\nResposta bruta (primeiros 2000 chars):\n{responsePreview}\n\nPrimeiros 3 registros retornados:\n{string.Join("\n", data.Take(3).Select((d, idx) => $"{idx + 1}. Time={d.Time:dd/MM/yyyy HH:mm:ss}, Valor=[{d.Valor}], Coletor=[{d.ColetorId}], Gateway=[{d.GatewayId}], Equip=[{d.EquipmentId}], Tag=[{d.TagId}]"))}";
-                }
-                else
-                {
-                    DebugInfo = $"Conexão: {connectionInfo}\n\nPrimeiros 3 registros retornados:\n{string.Join("\n", data.Take(3).Select((d, idx) => $"{idx + 1}. Time={d.Time:dd/MM/yyyy HH:mm:ss}, Valor=[{d.Valor}], Coletor=[{d.ColetorId}], Gateway=[{d.GatewayId}], Equip=[{d.EquipmentId}], Tag=[{d.TagId}]"))}";
-                }
+                DebugInfo = $"Conexão: {connectionInfo}\n\nPrimeiros 3 registros retornados:\n{string.Join("\n", data.Take(3).Select((d, idx) => $"{idx + 1}. Time={d.Time:dd/MM/yyyy HH:mm:ss}, Valor=[{d.Valor}], Coletor=[{d.ColetorId}], Gateway=[{d.GatewayId}], Equip=[{d.EquipmentId}], Tag=[{d.TagId}]"))}";
 
                 // Atualizar resultados
                 Results.Clear();
