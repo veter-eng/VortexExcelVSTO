@@ -101,6 +101,18 @@ namespace VortexExcelAddIn.ViewModels
                 {
                     OnPropertyChanged(nameof(IsVortexIO));
                     OnPropertyChanged(nameof(IsVortexHistorian));
+
+                    // CRÍTICO: Limpar resultados anteriores quando o tipo de servidor muda
+                    // Isso previne que dados de um servidor sejam exportados com o schema de outro servidor
+                    if (Results?.Count > 0 || PreviewResults?.Count > 0)
+                    {
+                        Results?.Clear();
+                        PreviewResults?.Clear();
+                        _lastQueryDatabaseType = null;
+                        StatusMessage = "Tipo de servidor alterado. Execute uma nova consulta.";
+                        StatusMessageColor = Brushes.Orange;
+                        LoggingService.Info($"[QUERY DEBUG] Resultados limpos devido à mudança de tipo de servidor para: {_configViewModel.SelectedDatabaseType}");
+                    }
                 }
             };
 
@@ -125,6 +137,15 @@ namespace VortexExcelAddIn.ViewModels
             LoggingService.Info("QueryViewModel inicializado");
         }
 
+
+        #region Private Fields
+
+        /// <summary>
+        /// Armazena o DatabaseType da última query executada para garantir export correto
+        /// </summary>
+        private Domain.Models.DatabaseType? _lastQueryDatabaseType;
+
+        #endregion
 
         #region Commands
 
@@ -152,6 +173,11 @@ namespace VortexExcelAddIn.ViewModels
                     LoggingService.Warn("Tentativa de consulta sem configuração válida");
                     return;
                 }
+
+                // CRÍTICO: Armazenar o DatabaseType da conexão REAL usada na query
+                // Isso garante que o export usará o schema correto mesmo se o usuário mudar
+                // a seleção na UI depois da query mas antes do export
+                _lastQueryDatabaseType = connection.DatabaseType;
 
                 // Log para debug: qual tipo de banco está sendo usado
                 var connInfo = connection.GetConnectionInfo();
@@ -223,7 +249,15 @@ namespace VortexExcelAddIn.ViewModels
             try
             {
                 var dataList = Results.ToList();
-                ExcelService.ExportToSheet(dataList, $"VortexData_{DateTime.Now:yyyyMMdd_HHmmss}", _configViewModel.SelectedDatabaseType);
+
+                // CRÍTICO: Usar o DatabaseType da query que gerou esses dados (_lastQueryDatabaseType)
+                // ao invés do SelectedDatabaseType atual da UI (_configViewModel.SelectedDatabaseType)
+                // Isso garante que o schema usado no export corresponde aos dados reais,
+                // mesmo se o usuário mudar a seleção do servidor na UI entre a query e o export
+                var databaseTypeForExport = _lastQueryDatabaseType ?? _configViewModel.SelectedDatabaseType;
+                LoggingService.Info($"[EXPORT DEBUG] Exportando com DatabaseType: {databaseTypeForExport} (lastQuery={_lastQueryDatabaseType}, selected={_configViewModel.SelectedDatabaseType})");
+
+                ExcelService.ExportToSheet(dataList, $"VortexData_{DateTime.Now:yyyyMMdd_HHmmss}", databaseTypeForExport);
 
                 StatusMessage = $"Dados Exportados para o Excel: {Results.Count:N0} Registros";
                 StatusMessageColor = Brushes.Green;
