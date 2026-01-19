@@ -123,3 +123,4 @@ node_modules/
 # Specific files
 netstandard.dll
 nuget.exe
+tmpclaude-*
