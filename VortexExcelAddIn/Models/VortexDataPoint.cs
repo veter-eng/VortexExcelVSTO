@@ -14,6 +14,20 @@ namespace VortexExcelAddIn.Models
         public string TagId { get; set; }
         public string Valor { get; set; }
 
+        /// <summary>
+        /// Tipo de agregação aplicada a este ponto de dados (opcional).
+        /// Exemplos: "average", "total", "min_max", "first_last", "delta"
+        /// Usado para identificar agregações em queries com múltiplos tipos.
+        /// </summary>
+        public string AggregationType { get; set; }
+
+        /// <summary>
+        /// Janela de tempo da agregação (opcional).
+        /// Exemplos: "5m", "15m", "30m", "60m"
+        /// Usado para identificar janelas de tempo em queries com múltiplas janelas.
+        /// </summary>
+        public string TimeWindow { get; set; }
+
         public VortexDataPoint()
         {
             Time = DateTime.UtcNow;
