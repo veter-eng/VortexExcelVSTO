@@ -244,6 +244,8 @@
     <Compile Include="Models\DatabaseConnectionSettings.cs" />
     <Compile Include="Models\TableSchema.cs" />
     <Compile Include="Models\AutoRefreshSettings.cs" />
+    <Compile Include="Models\AggregationConfiguration.cs" />
+    <Compile Include="Models\TempoConfiguration.cs" />
     <Compile Include="Domain\Interfaces\IDataSourceConnection.cs" />
     <Compile Include="Domain\Interfaces\IAutoRefreshService.cs" />
     <Compile Include="Domain\Interfaces\ITimerService.cs" />
@@ -252,12 +254,16 @@
     <Compile Include="Domain\Interfaces\IQueryBuilder.cs" />
     <Compile Include="Domain\Interfaces\ICredentialEncryptor.cs" />
     <Compile Include="Domain\Interfaces\IDatabaseConnectionFactory.cs" />
+    <Compile Include="Domain\Interfaces\IAggregationStrategy.cs" />
     <Compile Include="Domain\Models\DatabaseType.cs" />
     <Compile Include="Domain\Models\ConnectionResult.cs" />
     <Compile Include="Domain\Models\ConnectionInfo.cs" />
     <Compile Include="Domain\Models\AggregationType.cs" />
     <Compile Include="Application\Factories\DatabaseConnectionFactory.cs" />
+    <Compile Include="Application\Factories\AggregationStrategyFactory.cs" />
     <Compile Include="Application\Security\DPAPICredentialEncryptor.cs" />
+    <Compile Include="Application\Strategies\HistorianAggregationStrategy.cs" />
+    <Compile Include="Application\Strategies\VortexIOFilteringStrategy.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlConnection.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlQueryBuilder.cs" />
     <Compile Include="DataAccess\PostgreSQL\PostgreSqlConfig.cs" />
@@ -277,6 +283,7 @@
     <Compile Include="ViewModels\QueryViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\AutoRefreshViewModel.cs" />
+    <Compile Include="ViewModels\TempoViewModel.cs" />
     <Compile Include="Views\ConfigPanel.xaml.cs">
       <DependentUpon>ConfigPanel.xaml</DependentUpon>
     </Compile>
@@ -291,6 +298,9 @@
     </Compile>
     <Compile Include="Views\AutoRefreshStatusPanel.xaml.cs">
       <DependentUpon>AutoRefreshStatusPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\TempoDialog.xaml.cs">
+      <DependentUpon>TempoDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Converters.cs" />
     <Compile Include="Ribbon1.cs">
@@ -316,6 +326,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\AutoRefreshStatusPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\TempoDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
