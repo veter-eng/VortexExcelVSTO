@@ -242,6 +242,13 @@ namespace VortexExcelAddIn.Application.Factories
             var host = ExtractHostFromUrl(url);
             var port = ExtractPortFromUrl(url, 8086);
 
+            // Se o host é localhost, usar nome do container Docker pois o backend está em Docker
+            if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                host = "vortex_influxdb";
+                LoggingService.Info("Host alterado de localhost para vortex_influxdb (backend em Docker)");
+            }
+
             // Descriptografar token
             var token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(token))
@@ -275,6 +282,13 @@ namespace VortexExcelAddIn.Application.Factories
             var url = config.ConnectionSettings.Url ?? "http://localhost:8086";
             var host = ExtractHostFromUrl(url);
             var port = ExtractPortFromUrl(url, 8086);
+
+            // Se o host é localhost, usar nome do container Docker pois o backend está em Docker
+            if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                host = "vortex_influxdb";
+                LoggingService.Info("Host alterado de localhost para vortex_influxdb (backend em Docker)");
+            }
 
             // Descriptografar token
             var token = config.ConnectionSettings.EncryptedToken ?? string.Empty;
