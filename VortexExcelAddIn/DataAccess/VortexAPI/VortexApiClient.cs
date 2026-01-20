@@ -271,6 +271,34 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
 
         [JsonProperty("limit")]
         public int Limit { get; set; }
+
+        /// <summary>
+        /// Parâmetros de agregação (opcional).
+        /// Usado para Historian API aplicar agregação em tempo real aos dados brutos.
+        /// </summary>
+        [JsonProperty("aggregation")]
+        public AggregationDto Aggregation { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para parâmetros de agregação.
+    /// Usado pelo Historian API para aplicar agregações usando Flux queries.
+    /// </summary>
+    public class AggregationDto
+    {
+        /// <summary>
+        /// Tipo de agregação a ser aplicada.
+        /// Valores suportados: "mean", "sum", "min", "max", "count", "first", "last", "stddev"
+        /// </summary>
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        /// <summary>
+        /// Período da janela de agregação no formato Flux.
+        /// Exemplos: "5m" (5 minutos), "1h" (1 hora), "1d" (1 dia)
+        /// </summary>
+        [JsonProperty("window_period")]
+        public string WindowPeriod { get; set; }
     }
 
     /// <summary>
