@@ -14,6 +14,16 @@ namespace VortexExcelAddIn
             menuRefreshNow.Enabled = false; // Inicialmente desabilitado
             menuStopAutoRefresh.Image = Properties.Resources.StopIcon;
             menuStopAutoRefresh.Enabled = false; // Inicialmente desabilitado
+
+            // Carregar ícone do botão Tempo
+            try
+            {
+                btnTempo.Image = Properties.Resources.HourglassIcon;
+            }
+            catch
+            {
+                // Se o ícone não existir, deixa sem ícone (só texto)
+            }
         }
 
         private void btnToggleTaskPane_Click(object sender, RibbonControlEventArgs e)
@@ -34,6 +44,11 @@ namespace VortexExcelAddIn
         private void menuRefreshNow_Click(object sender, RibbonControlEventArgs e)
         {
             Globals.ThisAddIn.RefreshNow();
+        }
+
+        private void btnTempo_Click(object sender, RibbonControlEventArgs e)
+        {
+            Globals.ThisAddIn.ShowTempoDialog();
         }
 
         /// <summary>
