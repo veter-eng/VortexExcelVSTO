@@ -76,11 +76,25 @@ namespace VortexExcelAddIn.Services
                     sheet = (Worksheet)app.ActiveSheet;
                 }
 
+                // Verificar se há metadados de agregação (AggregationType e TimeWindow)
+                bool hasAggregationMetadata = data.Any(d => !string.IsNullOrEmpty(d.AggregationType));
+
+                LoggingService.Info($"[ExcelService] Exportando {data.Count} registros, hasAggregationMetadata={hasAggregationMetadata}");
+                if (hasAggregationMetadata)
+                {
+                    var samplePoint = data.First(d => !string.IsNullOrEmpty(d.AggregationType));
+                    LoggingService.Info($"[ExcelService] Sample metadata: AggregationType={samplePoint.AggregationType}, TimeWindow={samplePoint.TimeWindow}");
+                }
+
                 // Preparar array 2D (mais eficiente que célula por célula)
                 // VortexIO tem 5 colunas (sem Coletor ID), Vortex Historian e Vortex Historian API têm 6 colunas
+                // Se houver metadados de agregação, adicionar 2 colunas extras
                 bool isVortexIO = databaseType == Domain.Models.DatabaseType.VortexAPI;
-                int columnCount = isVortexIO ? 5 : 6;
+                int baseColumnCount = isVortexIO ? 5 : 6;
+                int columnCount = hasAggregationMetadata ? baseColumnCount + 2 : baseColumnCount;
                 object[,] values = new object[data.Count + 1, columnCount];
+
+                LoggingService.Info($"[ExcelService] DatabaseType={databaseType}, isVortexIO={isVortexIO}, baseColumnCount={baseColumnCount}, columnCount={columnCount}");
 
                 // Cabeçalhos - Ajustados para VortexIO (dados_airflow) vs Vortex Historian/Historian API (dados_rabbitmq)
                 if (isVortexIO)
@@ -91,6 +105,13 @@ namespace VortexExcelAddIn.Services
                     values[0, 2] = "Tipo de Agregação";  // aggregation_type (average_60m, total_60m, etc.)
                     values[0, 3] = "Tag ID";
                     values[0, 4] = "Valor";
+
+                    // Adicionar colunas de metadados de agregação se presentes
+                    if (hasAggregationMetadata)
+                    {
+                        values[0, 5] = "Agregação Aplicada";  // Ex: "average", "total"
+                        values[0, 6] = "Janela de Tempo";     // Ex: "5m", "60m"
+                    }
                 }
                 else
                 {
@@ -101,6 +122,13 @@ namespace VortexExcelAddIn.Services
                     values[0, 3] = "Equipment ID";
                     values[0, 4] = "Tag ID";
                     values[0, 5] = "Valor";
+
+                    // Adicionar colunas de metadados de agregação se presentes
+                    if (hasAggregationMetadata)
+                    {
+                        values[0, 6] = "Agregação Aplicada";  // Ex: "average", "total"
+                        values[0, 7] = "Janela de Tempo";     // Ex: "5m", "60m"
+                    }
                 }
 
                 // Dados
@@ -114,6 +142,13 @@ namespace VortexExcelAddIn.Services
                         values[i + 1, 2] = data[i].EquipmentId;  // Tipo de Agregação
                         values[i + 1, 3] = data[i].TagId;
                         values[i + 1, 4] = data[i].Valor;
+
+                        // Adicionar metadados de agregação se presentes
+                        if (hasAggregationMetadata)
+                        {
+                            values[i + 1, 5] = data[i].AggregationType ?? "";
+                            values[i + 1, 6] = data[i].TimeWindow ?? "";
+                        }
                     }
                     else
                     {
@@ -124,6 +159,13 @@ namespace VortexExcelAddIn.Services
                         values[i + 1, 3] = data[i].EquipmentId;
                         values[i + 1, 4] = data[i].TagId;
                         values[i + 1, 5] = data[i].Valor;
+
+                        // Adicionar metadados de agregação se presentes
+                        if (hasAggregationMetadata)
+                        {
+                            values[i + 1, 6] = data[i].AggregationType ?? "";
+                            values[i + 1, 7] = data[i].TimeWindow ?? "";
+                        }
                     }
                 }
 

@@ -38,6 +38,7 @@ namespace VortexExcelAddIn
             this.group1 = this.Factory.CreateRibbonGroup();
             this.btnToggleTaskPane = this.Factory.CreateRibbonButton();
             this.btnAutoRefresh = this.Factory.CreateRibbonSplitButton();
+            this.btnTempo = this.Factory.CreateRibbonButton();
             this.menuAutoRefresh = this.Factory.CreateRibbonMenu();
             this.menuRefreshNow = this.Factory.CreateRibbonButton();
             this.menuStopAutoRefresh = this.Factory.CreateRibbonButton();
@@ -56,6 +57,7 @@ namespace VortexExcelAddIn
             //
             this.group1.Items.Add(this.btnToggleTaskPane);
             this.group1.Items.Add(this.btnAutoRefresh);
+            this.group1.Items.Add(this.btnTempo);
             this.group1.Label = "Vortex Data";
             this.group1.Name = "group1";
             //
@@ -75,6 +77,14 @@ namespace VortexExcelAddIn
             this.btnAutoRefresh.Label = "Refresh";
             this.btnAutoRefresh.Name = "btnAutoRefresh";
             this.btnAutoRefresh.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnAutoRefresh_Click);
+            //
+            // btnTempo
+            //
+            this.btnTempo.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.btnTempo.Label = "Tempo";
+            this.btnTempo.Name = "btnTempo";
+            this.btnTempo.ShowImage = true;
+            this.btnTempo.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnTempo_Click);
             //
             // menuRefreshNow
             //
@@ -110,6 +120,7 @@ namespace VortexExcelAddIn
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnToggleTaskPane;
         internal Microsoft.Office.Tools.Ribbon.RibbonSplitButton btnAutoRefresh;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton btnTempo;
         internal Microsoft.Office.Tools.Ribbon.RibbonMenu menuAutoRefresh;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton menuRefreshNow;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton menuStopAutoRefresh;

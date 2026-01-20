@@ -44,7 +44,9 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
 
         public VortexApiConfig()
         {
-            InfluxHost = "localhost";
+            // Usar nome do container Docker ao invés de localhost
+            // pois o backend está em Docker e precisa acessar o InfluxDB via rede Docker
+            InfluxHost = "vortex_influxdb";
             InfluxPort = 8086;
             InfluxOrg = "vortex";
             InfluxBucket = "dados_airflow"; // Bucket com dados agregados do Airflow

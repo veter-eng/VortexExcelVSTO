@@ -15,8 +15,11 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
     /// Segue o princípio DIP (Dependency Inversion Principle) do SOLID.
     /// Usa credenciais inline (enviadas diretamente na requisição) ao invés de ID de conexão gerenciado.
     /// Acessa dados raw da tabela dados_rabbitmq através da API.
+    ///
+    /// Implementa ISupportsAggregation para permitir agregações em tempo real
+    /// usando Flux queries no InfluxDB através da API.
     /// </summary>
-    public class HistorianApiDataSourceAdapter : IDataSourceConnection
+    public class HistorianApiDataSourceAdapter : IDataSourceConnection, ISupportsAggregation
     {
         private readonly HistorianApiConfig _config;
         private readonly VortexApiClient _apiClient;
@@ -182,6 +185,63 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToList();
+        }
+
+        /// <summary>
+        /// Executa consulta com agregação de dados usando Flux queries através da API.
+        /// Implementação da interface ISupportsAggregation.
+        /// </summary>
+        /// <param name="parameters">Parâmetros de consulta base (filtros, intervalo de tempo, etc.)</param>
+        /// <param name="aggregation">Tipo de agregação (Mean, Min, Max, Count, Sum, First, Last, StdDev)</param>
+        /// <param name="windowPeriod">Período da janela de agregação (ex: "5m", "1h", "1d")</param>
+        /// <returns>Lista de pontos de dados agregados</returns>
+        public async Task<List<VortexDataPoint>> QueryAggregatedDataAsync(
+            QueryParams parameters,
+            AggregationType aggregation,
+            string windowPeriod = "1m")
+        {
+            LoggingService.Info($"[HistorianApiDataSourceAdapter] QueryAggregatedDataAsync - Aggregation: {aggregation}, Window: {windowPeriod}");
+
+            // Construir credenciais inline
+            var inlineCredentials = new InfluxDBInlineCredentialsDto
+            {
+                Host = _config.InfluxHost,
+                Port = _config.InfluxPort,
+                Org = _config.InfluxOrg,
+                Bucket = _config.InfluxBucket,
+                Token = _config.InfluxToken
+            };
+
+            // Construir DTO de agregação
+            var aggregationDto = new AggregationDto
+            {
+                Type = aggregation.ToFluxFunction(),
+                WindowPeriod = windowPeriod
+            };
+
+            // Construir request DTO com agregação
+            var request = new QueryRequestDto
+            {
+                InlineCredentials = inlineCredentials,
+                Measurement = "dados_rabbitmq", // Dados brutos do Historian
+                ColetorIds = ParseCsvToList(parameters.ColetorId),
+                GatewayIds = ParseCsvToList(parameters.GatewayId),
+                EquipmentIds = ParseCsvToList(parameters.EquipmentId),
+                TagIds = ParseCsvToList(parameters.TagId),
+                StartTime = parameters.StartTime,
+                EndTime = parameters.EndTime,
+                Limit = parameters.Limit ?? 1000,
+                Aggregation = aggregationDto  // Adiciona parâmetros de agregação
+            };
+
+            LoggingService.Info($"[HistorianApiDataSourceAdapter] Sending aggregation request to API: {aggregation.ToFluxFunction()} over {windowPeriod}");
+
+            // Executar query através da API
+            var dataPoints = await _apiClient.QueryDataAsync(request);
+
+            LoggingService.Info($"[HistorianApiDataSourceAdapter] QueryAggregatedDataAsync returned {dataPoints.Count} aggregated points");
+
+            return dataPoints;
         }
 
         public void Dispose()

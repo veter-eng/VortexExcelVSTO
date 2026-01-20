@@ -45,7 +45,9 @@ namespace VortexExcelAddIn.DataAccess.VortexAPI
 
         public HistorianApiConfig()
         {
-            InfluxHost = "localhost";
+            // Usar nome do container Docker ao invés de localhost
+            // pois o backend está em Docker e precisa acessar o InfluxDB via rede Docker
+            InfluxHost = "vortex_influxdb";
             InfluxPort = 8086;
             InfluxOrg = "vortex";
             InfluxBucket = "vortex_data"; // Bucket que contém a measurement dados_rabbitmq
