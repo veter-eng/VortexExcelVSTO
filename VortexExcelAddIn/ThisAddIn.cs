@@ -239,6 +239,49 @@ namespace VortexExcelAddIn
         }
 
         /// <summary>
+        /// Exibe o diálogo de configuração de agregação temporal.
+        /// Chamado pelo clique no botão "Tempo" do Ribbon.
+        /// </summary>
+        public void ShowTempoDialog()
+        {
+            try
+            {
+                var mainViewModel = _taskPaneControl.DataContext as ViewModels.MainViewModel;
+                var configViewModel = mainViewModel?.ConfigViewModel;
+                var queryViewModel = mainViewModel?.QueryViewModel;
+
+                if (configViewModel == null || queryViewModel == null)
+                {
+                    MessageBox.Show("ViewModels não estão disponíveis", "Erro",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoggingService.Warn("ShowTempoDialog: ViewModels não disponíveis");
+                    return;
+                }
+
+                // Criar ViewModel do diálogo
+                var tempoViewModel = new ViewModels.TempoViewModel(
+                    configViewModel,
+                    queryViewModel);
+
+                // Criar e exibir diálogo
+                var dialog = new Views.TempoDialog
+                {
+                    DataContext = tempoViewModel
+                };
+
+                dialog.ShowDialog();
+
+                LoggingService.Info("TempoDialog fechado");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Error("Erro ao exibir diálogo Tempo", ex);
+                MessageBox.Show($"Erro ao abrir diálogo de agregação: {ex.Message}", "Erro",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
         /// Para o auto-refresh.
         /// Chamado pelo menu dropdown do botão do Ribbon.
         /// </summary>
