@@ -132,13 +132,7 @@ Antes de instalar o plugin, certifique-se de ter:
 
 Se você não tem o VSTO Runtime instalado:
 
-**⚠️ Importante: Execute como Administrador!**
-
-1. Abra o PowerShell como Administrador (Windows + X → Windows PowerShell (Admin))
-2. Navegue até a pasta do projeto
-3. Execute: `.\install-vsto.ps1`
-
-Ou baixe manualmente:
+Baixe manualmente:
 - Baixe o instalador: [Microsoft Visual Studio 2010 Tools for Office Runtime](https://visualstudio.microsoft.com/pt-br/vs/community/)
 - Execute o instalador baixado (pode precisar executar como administrador)
 - Siga as instruções na tela
