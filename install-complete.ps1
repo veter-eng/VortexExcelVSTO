@@ -259,27 +259,59 @@ if (-not $SkipBuild) {
             # Restaurar pacotes NuGet primeiro
             Write-Info "Restaurando pacotes NuGet..."
             $packagesConfig = Join-Path $projectPath "packages.config"
-            if (Test-Path $packagesConfig) {
-                # Tentar restaurar via MSBuild primeiro
-                & $msbuild $projectFile /t:Restore /v:minimal /nologo | Out-Null
+            $solutionFile = Join-Path $scriptPath "VortexExcelVSTO.slnx"
+            
+            # Para projetos com packages.config, usar NuGet.exe diretamente
+            $nugetPath = "$env:TEMP\nuget.exe"
+            if (-not (Test-Path $nugetPath)) {
+                try {
+                    Write-Info "Baixando NuGet.exe..."
+                    Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nugetPath -ErrorAction Stop
+                } catch {
+                    Write-Warning "Nao foi possivel baixar NuGet.exe. Tentando continuar..."
+                }
+            }
+            
+            if (Test-Path $nugetPath) {
+                $packagesDir = Join-Path $scriptPath "packages"
                 
-                # Se falhar, tentar via NuGet.exe
-                if ($LASTEXITCODE -ne 0) {
-                    $nugetPath = "$env:TEMP\nuget.exe"
-                    if (-not (Test-Path $nugetPath)) {
-                        try {
-                            Write-Info "Baixando NuGet.exe..."
-                            Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nugetPath -ErrorAction Stop
-                        } catch {
-                            Write-Warning "Nao foi possivel baixar NuGet.exe. Tentando continuar..."
+                # Para projetos com packages.config, restaurar cada pacote individualmente
+                if (Test-Path $packagesConfig) {
+                    Write-Info "Lendo pacotes do packages.config..."
+                    [xml]$packagesXml = Get-Content $packagesConfig
+                    $packages = $packagesXml.packages.package
+                    
+                    foreach ($package in $packages) {
+                        $packageId = $package.id
+                        $packageVersion = $package.version
+                        $packagePath = Join-Path $packagesDir "$packageId.$packageVersion"
+                        
+                        if (-not (Test-Path $packagePath)) {
+                            Write-Info "Instalando pacote: $packageId versao $packageVersion..."
+                            Push-Location $scriptPath
+                            try {
+                                & $nugetPath install $packageId -Version $packageVersion -OutputDirectory $packagesDir -NonInteractive 2>&1 | Out-Null
+                            } catch {
+                                Write-Warning "Erro ao instalar $packageId : $_"
+                            } finally {
+                                Pop-Location
+                            }
+                        } else {
+                            Write-Info "Pacote $packageId ja existe"
                         }
                     }
-                    
-                    if (Test-Path $nugetPath) {
-                        $packagesDir = Join-Path $scriptPath "packages"
-                        & $nugetPath restore $packagesConfig -PackagesDirectory $packagesDir -NonInteractive | Out-Null
-                    }
                 }
+                
+                # Verificar se os pacotes foram restaurados corretamente
+                $communityToolkitPath = Join-Path $packagesDir "CommunityToolkit.Mvvm.8.2.2"
+                if (-not (Test-Path $communityToolkitPath)) {
+                    Write-Warning "Pacote CommunityToolkit.Mvvm nao encontrado apos restauracao"
+                } else {
+                    Write-Success "Pacotes NuGet restaurados com sucesso"
+                }
+            } else {
+                Write-Warning "NuGet.exe nao encontrado. Tentando restaurar via MSBuild..."
+                & $msbuild $projectFile /t:Restore /v:minimal /nologo 2>&1 | Out-Null
             }
             
             Write-Info "Compilando em modo Release..."
