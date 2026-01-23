@@ -132,30 +132,53 @@ Antes de instalar o plugin, certifique-se de ter:
 
 Se você não tem o VSTO Runtime instalado:
 
-1. Baixe o instalador: [Microsoft Visual Studio 2010 Tools for Office Runtime](https://www.microsoft.com/en-us/download/details.aspx?id=56961)
-2. Execute o instalador baixado
-3. Siga as instruções na tela
+Baixe manualmente:
+- Baixe o instalador: [Microsoft Visual Studio 2010 Tools for Office Runtime](https://visualstudio.microsoft.com/pt-br/vs/community/)
+- Execute o instalador baixado (pode precisar executar como administrador)
+- Siga as instruções na tela
 
 ## Instalação do Plugin
 
-### Método 1: Instalação Automática via Script (Recomendado)
+### ⚠️ Importante: Execute como Administrador
 
-1. **Execute o script de instalação:**
-   ```bash
-   install-plugin-v2.bat
+**Alguns passos da instalação precisam ser executados como Administrador** para instalar programas no Windows. Quando você vir este símbolo ⚠️, significa que precisa executar como administrador.
+
+**Como executar como Administrador:**
+- Pressione **Windows + X**
+- Clique em **"Windows PowerShell (Admin)"** ou **"Terminal (Admin)"**
+- Se aparecer uma pergunta, clique em **"Sim"**
+
+### Método 1: Instalação Automática via Script (Recomendado) ⚠️
+
+**Execute o PowerShell como Administrador antes de continuar!**
+
+1. **Abra o PowerShell como Administrador** ⚠️
+   - Pressione **Windows + X**
+   - Clique em **"Windows PowerShell (Admin)"**
+
+2. **Navegue até a pasta do projeto:**
+   ```powershell
+   cd "C:\caminho\para\VortexExcelVSTO"
    ```
 
-2. **O script irá automaticamente:**
+3. **Execute o script de instalação:**
+   ```powershell
+   .\install-complete.ps1
+   ```
+
+4. **O script irá automaticamente:**
+   - ✅ Verificar pré-requisitos
    - ✅ Fechar o Excel se estiver aberto
    - ✅ Limpar itens desabilitados no registro
    - ✅ Limpar cache de add-ins
+   - ✅ Restaurar pacotes NuGet
+   - ✅ Compilar o projeto
    - ✅ Desinstalar versões anteriores
    - ✅ Instalar a nova versão
-   - ✅ Abrir o Excel
 
-3. **Clique em "Instalar"** na janela que aparecer
+5. **Clique em "Instalar"** na janela que aparecer
 
-4. **Verifique a instalação:**
+6. **Verifique a instalação:**
    - Você deve ver **2 MessageBoxes** ao abrir o Excel:
      - "Vortex Add-in: Iniciando..."
      - "Vortex Add-in: Carregado com sucesso!"
@@ -325,13 +348,14 @@ Se você não vê as mensagens "Vortex Add-in: Iniciando..." e "Vortex Add-in: C
 3. Se "VortexExcelAddIn" estiver na lista, selecione-o e clique em **"Habilitar"**
 4. Reinicie o Excel
 
-**Solução 2: Usar o script de diagnóstico**
-1. Execute o script `diagnose-and-fix.bat`
-2. O script irá:
+**Solução 2: Usar o script de diagnóstico** ⚠️
+1. Abra o PowerShell como Administrador
+2. Execute: `.\diagnose-plugin.ps1` ou `.\diagnose-and-fix.bat`
+3. O script irá:
    - Verificar e limpar itens desabilitados
    - Limpar cache de add-ins
    - Recompilar e reinstalar o plugin
-3. Siga as instruções na tela
+4. Siga as instruções na tela
 
 ### A aba "Vortex" não aparece no Ribbon
 
@@ -362,9 +386,16 @@ Se você não vê as mensagens "Vortex Add-in: Iniciando..." e "Vortex Add-in: C
 
 ### Erro "VSTO Runtime não encontrado"
 
-1. Instale o [Visual Studio 2010 Tools for Office Runtime](https://www.microsoft.com/en-us/download/details.aspx?id=56961)
-2. Reinicie o computador
-3. Tente instalar o plugin novamente
+**⚠️ Execute como Administrador!**
+
+1. Abra o PowerShell como Administrador
+2. Execute: `.\install-vsto.ps1`
+   
+Ou instale manualmente:
+- Baixe: [Visual Studio 2010 Tools for Office Runtime](https://www.microsoft.com/en-us/download/details.aspx?id=56961)
+- Execute o instalador como Administrador
+- Reinicie o computador
+- Tente instalar o plugin novamente
 
 ### O painel do plugin não abre
 
@@ -389,9 +420,11 @@ Para desenvolvimento/teste local:
 
 ### Compilando o projeto
 
-```bash
-# Via MSBuild
-msbuild VortexExcelAddIn\VortexExcelAddIn.csproj /p:Configuration=Release
+**⚠️ Execute como Administrador se necessário!**
+
+```powershell
+# Via MSBuild (no PowerShell como Administrador)
+msbuild VortexExcelAddIn\VortexExcelAddIn.csproj /p:Configuration=Release /t:Restore,Build
 
 # Via Visual Studio
 # Abra o projeto e pressione Ctrl+Shift+B

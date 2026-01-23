@@ -1,5 +1,5 @@
 # Script para instalar VSTO Runtime automaticamente
-#Requires -RunAsAdministrator
+# Requires -RunAsAdministrator
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Instalador do VSTO Runtime" -ForegroundColor Cyan
@@ -54,10 +54,40 @@ if (-not $downloaded) {
         Write-Host "[ERRO] Falha ao instalar via winget: $($_.Exception.Message)" -ForegroundColor Red
     }
 
-    Write-Host "`nPor favor, baixe manualmente de:" -ForegroundColor Yellow
-    Write-Host "https://aka.ms/vs/17/release/vstor_redist.exe" -ForegroundColor Cyan
-    Write-Host "`nOu execute: start https://aka.ms/vs/17/release/vstor_redist.exe" -ForegroundColor Cyan
-    pause
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "INSTALACAO MANUAL NECESSARIA" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Nao foi possivel baixar automaticamente." -ForegroundColor White
+    Write-Host ""
+    Write-Host "Por favor, baixe manualmente de uma das opcoes:" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "OPCAO 1: Visual Studio Community (Recomendado)" -ForegroundColor Cyan
+    Write-Host "  - O Visual Studio inclui o VSTO Runtime automaticamente" -ForegroundColor White
+    Write-Host "  - Download: https://visualstudio.microsoft.com/pt-br/thank-you-downloading-visual-studio/?sku=Community&channel=Stable&version=VS18&source=VSLandingPage&passive=false&cid=2500" -ForegroundColor White
+    Write-Host "  - Durante a instalacao, selecione 'Desenvolvimento para Desktop com .NET'" -ForegroundColor White
+    Write-Host ""
+    Write-Host "OPCAO 2: Link direto do VSTO Runtime" -ForegroundColor Cyan
+    Write-Host "  https://aka.ms/vs/17/release/vstor_redist.exe" -ForegroundColor White
+    Write-Host ""
+    Write-Host "OPCAO 3: Pagina oficial da Microsoft" -ForegroundColor Cyan
+    Write-Host "  https://www.microsoft.com/en-us/download/details.aspx?id=105890" -ForegroundColor White
+    Write-Host ""
+    
+    $openBrowser = Read-Host "Deseja abrir a pagina de download do Visual Studio Community? (S/N)"
+    if (-not [string]::IsNullOrWhiteSpace($openBrowser) -and $openBrowser -match "^[Ss]") {
+        Write-Host ""
+        Write-Host "Abrindo pagina de download do Visual Studio Community..." -ForegroundColor Yellow
+        Start-Process "https://visualstudio.microsoft.com/pt-br/thank-you-downloading-visual-studio/?sku=Community&channel=Stable&version=VS18&source=VSLandingPage&passive=false&cid=2500"
+        Write-Host ""
+        Write-Host "Apos instalar o Visual Studio, o VSTO Runtime sera instalado automaticamente." -ForegroundColor Yellow
+        Write-Host "Depois execute este script novamente para verificar." -ForegroundColor Yellow
+    }
+    
+    Write-Host ""
+    Write-Host "Pressione qualquer tecla para sair..."
+    $null = $Host.UI.RawUI.ReadKey([System.Management.Automation.Host.ReadKeyOptions]::NoEcho -bor [System.Management.Automation.Host.ReadKeyOptions]::IncludeKeyDown)
     exit 1
 }
 
@@ -91,8 +121,10 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "Instalação concluída!" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-Write-Host "Próximos passos:" -ForegroundColor Yellow
-Write-Host "1. Execute novamente: diagnose-and-fix.bat" -ForegroundColor White
-Write-Host "2. Ou reinicie o computador primeiro (recomendado)" -ForegroundColor White
+Write-Host "Proximos passos:" -ForegroundColor Yellow
+Write-Host "1. Execute: .\install-complete.ps1 para instalar o plugin" -ForegroundColor White
+Write-Host "2. Ou reinicie o computador primeiro (recomendado se solicitado)" -ForegroundColor White
+Write-Host ""
 
-pause
+Write-Host "Pressione qualquer tecla para sair..."
+$null = $Host.UI.RawUI.ReadKey([System.Management.Automation.Host.ReadKeyOptions]::NoEcho -bor [System.Management.Automation.Host.ReadKeyOptions]::IncludeKeyDown)
